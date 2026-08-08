@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 
+import { BrandLogo } from "@/components/brand-logo";
 import { CreateOrganizationForm } from "@/components/create-organization-form";
 import { LogoutButton } from "@/components/logout-button";
 import {
@@ -29,7 +30,11 @@ export default async function OnboardingPage() {
   const hasOrgs = !!orgs && orgs.length > 0;
 
   return (
-    <main className="flex min-h-dvh flex-col items-center justify-center px-4 py-8">
+    <main className="flex min-h-dvh flex-col items-center justify-center gap-5 px-4 py-8">
+      <div className="flex flex-col items-center gap-2">
+        <BrandLogo size={72} />
+        <p className="text-2xl font-extrabold tracking-tight">KasKita</p>
+      </div>
       <Card className="w-full max-w-sm">
         <CardHeader>
           <CardTitle>

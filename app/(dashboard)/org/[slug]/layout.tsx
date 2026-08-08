@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { BottomNav } from "@/components/bottom-nav";
+import { BrandLogo } from "@/components/brand-logo";
 import { DesktopNav } from "@/components/desktop-nav";
 import { Forbidden } from "@/components/forbidden";
 import { LogoutButton } from "@/components/logout-button";
@@ -50,7 +51,10 @@ export default async function OrgLayout({
     <div className="flex min-h-dvh flex-col">
       <header className="sticky top-0 z-40 border-b bg-background">
         <div className="mx-auto flex h-14 w-full max-w-5xl items-center gap-2 px-4">
-          <p className="truncate text-sm font-semibold">{activeOrg.name}</p>
+          <div className="flex min-w-0 items-center gap-2">
+            <BrandLogo size={28} className="ring-0" />
+            <p className="truncate text-sm font-bold">{activeOrg.name}</p>
+          </div>
           <div className="ml-auto flex items-center gap-2">
             <OrgSwitcher orgs={orgs ?? []} activeSlug={slug} />
             <LogoutButton className="hidden h-9 px-3 text-sm md:inline-flex" />

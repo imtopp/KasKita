@@ -38,7 +38,7 @@ export function BottomNav({ slug }: { slug: string }) {
               className={cn(
                 "flex flex-col items-center justify-center gap-1 text-[10px]",
                 active
-                  ? "font-semibold text-foreground"
+                  ? "font-bold text-primary"
                   : "text-muted-foreground",
               )}
             >

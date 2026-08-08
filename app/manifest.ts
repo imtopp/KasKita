@@ -7,12 +7,11 @@ export default function manifest(): MetadataRoute.Manifest {
     description: "Kelola kas organisasi dengan mudah.",
     start_url: "/",
     display: "standalone",
-    background_color: "#ffffff",
-    theme_color: "#059669",
+    background_color: "#fff7fb",
+    theme_color: "#f6a6c4",
     icons: [
       { src: "/icon-192.png", sizes: "192x192", type: "image/png" },
       { src: "/icon-512.png", sizes: "512x512", type: "image/png" },
-      { src: "/icon.svg", sizes: "any", type: "image/svg+xml" },
     ],
   };
 }
