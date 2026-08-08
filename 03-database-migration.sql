@@ -216,6 +216,22 @@ create trigger trg_add_creator_as_owner
   after insert on organizations
   for each row execute function add_creator_as_owner();
 
+-- ---------------------------------------------------------
+-- 12. GRANTS — akses Data API (PostgREST / supabase-js)
+-- ---------------------------------------------------------
+-- Tabel di public tidak lagi otomatis di-grant sejak default
+-- Supabase 30 Mei 2026. GRANT di bawah ini WAJIB ada supaya
+-- supabase-js bisa mengakses tabel via Data API.
+-- `authenticated` = user login; `service_role` = server-side (API route).
+-- `anon` sengaja TIDAK di-grant (semua data butuh login).
+-- RLS tetap jadi lapisan utama; GRANT hanya lapisan akses dasar.
+
+grant select, insert, update, delete
+  on organizations, organization_members, categories, transactions, invitations
+  to authenticated, service_role;
+
+grant usage on schema public to authenticated, service_role;
+
 -- =========================================================
 -- SELESAI. Setelah ini, buat Storage bucket "receipts" secara manual
 -- di Supabase Dashboard > Storage, set public read atau signed URL
