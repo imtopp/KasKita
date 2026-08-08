@@ -121,7 +121,7 @@ export function CreateMemberDialog({
             </p>
           </div>
           <DialogFooter>
-            <DialogClose render={<Button type="button" variant="outline" />}>
+            <DialogClose render={<Button type="button" variant="outline" className="h-11" />}>
               Tutup
             </DialogClose>
           </DialogFooter>
@@ -228,7 +228,7 @@ export function CreateMemberDialog({
             </Select>
           </div>
           <DialogFooter>
-            <DialogClose render={<Button type="button" variant="outline" />}>
+            <DialogClose render={<Button type="button" variant="outline" className="h-11" />}>
               Batal
             </DialogClose>
             <Button

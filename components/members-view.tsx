@@ -194,7 +194,7 @@ export function MembersView({
                       }
                     }}
                   >
-                    <SelectTrigger className="h-10 w-32 data-[size=default]:h-10">
+                    <SelectTrigger className="h-11 w-32 data-[size=default]:h-11">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -206,7 +206,7 @@ export function MembersView({
                   {member.user_id !== currentUserId && (
                     <Button
                       variant="destructive"
-                      className="h-10 px-3 text-sm"
+                      className="h-11 px-3 text-sm"
                       disabled={busy}
                       onClick={() => {
                         setDeleting(member);
@@ -260,7 +260,7 @@ export function MembersView({
             </div>
           )}
           <DialogFooter>
-            <DialogClose render={<Button type="button" variant="outline" />}>
+            <DialogClose render={<Button type="button" variant="outline" className="h-11" />}>
               Batal
             </DialogClose>
             <Button

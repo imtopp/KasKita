@@ -300,7 +300,7 @@ export function TransactionFormDialog({
           </div>
           <DialogFooter>
             <DialogClose
-              render={<Button type="button" variant="outline" />}
+              render={<Button type="button" variant="outline" className="h-11" />}
             >
               Batal
             </DialogClose>

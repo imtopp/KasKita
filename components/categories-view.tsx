@@ -49,14 +49,14 @@ function CategoryList({
                 <div className="flex shrink-0 gap-2">
                   <Button
                     variant="outline"
-                    className="h-10 px-3 text-sm"
+                    className="h-11 px-3 text-sm"
                     onClick={() => onEdit(category)}
                   >
                     Edit
                   </Button>
                   <Button
                     variant="destructive"
-                    className="h-10 px-3 text-sm"
+                    className="h-11 px-3 text-sm"
                     onClick={() => onDelete(category)}
                   >
                     Hapus
@@ -187,7 +187,7 @@ export function CategoriesView({
             </div>
           )}
           <DialogFooter>
-            <DialogClose render={<Button type="button" variant="outline" />}>
+            <DialogClose render={<Button type="button" variant="outline" className="h-11" />}>
               Batal
             </DialogClose>
             <Button

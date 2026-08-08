@@ -228,7 +228,7 @@ export function TransactionsView({
                     <div className="flex gap-2">
                       <Button
                         variant="outline"
-                        className="h-10 px-3 text-sm"
+                        className="h-11 px-3 text-sm"
                         onClick={() => {
                           setEditing(transaction);
                           setFormOpen(true);
@@ -238,7 +238,7 @@ export function TransactionsView({
                       </Button>
                       <Button
                         variant="destructive"
-                        className="h-10 px-3 text-sm"
+                        className="h-11 px-3 text-sm"
                         onClick={() => {
                           setDeleting(transaction);
                           setDeleteError(null);
@@ -303,7 +303,7 @@ export function TransactionsView({
             </div>
           )}
           <DialogFooter>
-            <DialogClose render={<Button type="button" variant="outline" />}>
+            <DialogClose render={<Button type="button" variant="outline" className="h-11" />}>
               Batal
             </DialogClose>
             <Button

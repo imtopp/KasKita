@@ -42,7 +42,10 @@ export function OrgSwitcher({
         }
       }}
     >
-      <SelectTrigger size="sm" className="max-w-44" aria-label="Ganti organisasi">
+      <SelectTrigger
+        className="h-11 max-w-44 data-[size=default]:h-11"
+        aria-label="Ganti organisasi"
+      >
         <SelectValue placeholder="Pilih organisasi" />
       </SelectTrigger>
       <SelectContent align="end">
