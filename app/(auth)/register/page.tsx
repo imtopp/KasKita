@@ -26,6 +26,7 @@ export default function RegisterPage() {
   const supabase = createClient();
   const [serverError, setServerError] = useState<string | null>(null);
   const [registered, setRegistered] = useState(false);
+  const [redirecting, setRedirecting] = useState(false);
 
   const {
     register,
@@ -61,6 +62,7 @@ export default function RegisterPage() {
     }
 
     if (data.session) {
+      setRedirecting(true);
       router.push("/");
       router.refresh();
       return;
@@ -154,13 +156,17 @@ export default function RegisterPage() {
         <CardFooter className="flex-col items-stretch gap-4">
           <Button
             type="submit"
-            disabled={isSubmitting}
+            disabled={isSubmitting || redirecting}
             className="h-11 w-full text-base"
           >
-            {isSubmitting && (
-              <Loader2 className="size-4 animate-spin" aria-hidden />
+            {isSubmitting || redirecting ? (
+              <>
+                <Loader2 className="size-4 animate-spin" aria-hidden />
+                Mendaftar...
+              </>
+            ) : (
+              "Daftar"
             )}
-            {isSubmitting ? "Mendaftar..." : "Daftar"}
           </Button>
           <p className="text-center text-sm text-muted-foreground">
             Sudah punya akun?{" "}

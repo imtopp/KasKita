@@ -34,6 +34,7 @@ function LoginForm() {
   const searchParams = useSearchParams();
   const supabase = createClient();
   const [serverError, setServerError] = useState<string | null>(null);
+  const [redirecting, setRedirecting] = useState(false);
 
   const {
     register,
@@ -73,6 +74,7 @@ function LoginForm() {
     }
 
     const next = safeNext(searchParams.get("next"));
+    setRedirecting(true);
     router.push(next);
     router.refresh();
   });
@@ -125,13 +127,17 @@ function LoginForm() {
         <CardFooter className="flex-col items-stretch gap-4">
           <Button
             type="submit"
-            disabled={isSubmitting}
+            disabled={isSubmitting || redirecting}
             className="h-11 w-full text-base"
           >
-            {isSubmitting && (
-              <Loader2 className="size-4 animate-spin" aria-hidden />
+            {isSubmitting || redirecting ? (
+              <>
+                <Loader2 className="size-4 animate-spin" aria-hidden />
+                Masuk...
+              </>
+            ) : (
+              "Masuk"
             )}
-            {isSubmitting ? "Masuk..." : "Masuk"}
           </Button>
           <div className="flex flex-col gap-1 text-center text-sm text-muted-foreground">
             <Link
