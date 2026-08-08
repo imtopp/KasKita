@@ -36,3 +36,29 @@ export function formatDateID(date: string): string {
     year: "numeric",
   });
 }
+
+export const MONTH_NAMES = [
+  "Januari",
+  "Februari",
+  "Maret",
+  "April",
+  "Mei",
+  "Juni",
+  "Juli",
+  "Agustus",
+  "September",
+  "Oktober",
+  "November",
+  "Desember",
+];
+
+export function pad2(value: number): string {
+  return String(value).padStart(2, "0");
+}
+
+export function categoryFromEmbedded(
+  embedded: { name: string } | { name: string }[] | null | undefined,
+): { name: string } | null {
+  if (!embedded) return null;
+  return Array.isArray(embedded) ? embedded[0] ?? null : embedded;
+}

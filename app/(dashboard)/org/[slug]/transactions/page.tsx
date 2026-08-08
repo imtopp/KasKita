@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation";
 
 import { TransactionsView } from "@/components/transactions-view";
 import { createClient } from "@/lib/supabase/server";
+import { categoryFromEmbedded } from "@/lib/utils";
 
 const PAGE_SIZE = 20;
 
@@ -97,14 +98,10 @@ export default async function TransactionsPage({
       description: string | null;
       transaction_date: string;
       created_by: string;
-      categories: { name: string }[];
+      categories: { name: string } | { name: string }[];
     }) => ({
       ...transaction,
-      categories:
-        Array.isArray(transaction.categories) &&
-        transaction.categories.length > 0
-          ? transaction.categories[0]
-          : null,
+      categories: categoryFromEmbedded(transaction.categories),
     }),
   );
 

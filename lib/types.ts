@@ -105,3 +105,15 @@ export type TransactionRow = {
   created_by: string;
   categories: { name: string } | null;
 };
+
+export type MonthTotals = {
+  income: number;
+  expense: number;
+  net: number;
+};
+
+export type CategoryBreakdown = {
+  name: string;
+  type: "income" | "expense";
+  total: number;
+};
