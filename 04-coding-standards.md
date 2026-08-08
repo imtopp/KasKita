@@ -7,12 +7,15 @@ Dokumen ini untuk dipegang AI coding assistant supaya hasil kerja konsisten wala
 - TypeScript wajib di semua file `.ts`/`.tsx`, hindari `any` kecuali benar-benar tidak terhindarkan
 - Tailwind CSS untuk semua styling — jangan campur dengan CSS modules atau styled-components
 - shadcn/ui untuk komponen dasar (button, input, dialog, dll) — jangan bikin komponen custom untuk hal yang sudah tersedia di shadcn/ui
+- Font utama = **Baloo 2** via `next/font/google` (`--font-kawaii`); jangan ganti font tanpa konfirmasi
+- Route protection pakai `proxy.ts` (Next 16 — pengganti `middleware.ts`), helper di `lib/supabase/middleware.ts` (`updateSession`)
 
 ## Struktur & Penamaan
 - Nama file komponen: `kebab-case.tsx` (contoh: `transaction-form.tsx`), nama komponen di dalamnya `PascalCase` (contoh: `TransactionForm`)
 - Nama folder route: sesuai struktur di dokumen arsitektur section 7 — jangan bikin struktur folder baru tanpa update dokumen arsitektur dulu
 - Server Component sebagai default; tambahkan `'use client'` HANYA kalau butuh interaktivitas (form, state, event handler)
 - Query ke Supabase di Server Component pakai `lib/supabase/server.ts`; di Client Component pakai `lib/supabase/client.ts` — jangan pernah tertukar
+- Navigasi: `BottomNav` untuk mobile, `DesktopNav` untuk `md+` (dipasang di org layout)
 
 ## Data Access Pattern
 - **Selalu andalkan RLS**, jangan tulis manual filter `organization_id` di query sebagai satu-satunya lapisan keamanan (RLS = lapisan utama, filter manual di kode = defense-in-depth tambahan, bukan pengganti)
@@ -28,6 +31,13 @@ Dokumen ini untuk dipegang AI coding assistant supaya hasil kerja konsisten wala
 ## Validasi Data
 - Setiap input yang masuk ke database harus divalidasi di **dua tempat**: frontend (UX cepat) dan constraint database (safety net) — jangan andalkan salah satu saja
 - Skema validasi (`zod`) untuk satu entity (misal `Transaction`) ditulis SEKALI di `lib/types.ts` atau file schema terpisah, dipakai ulang di form dan di API route — jangan duplikasi definisi validasi
+
+## Tema & Styling (Per-Akun)
+- Semua warna lewat **CSS variables** (`--background`, `--primary`, dll) di `app/globals.css`, dikelompokkan per blok `:root` / `[data-theme="..."]` — jangan hardcode warna di komponen
+- Tema aktif diset lewat atribut `data-theme` pada `<html>` (nilai: `klasik`, `kawaii`, `ocean`, `forest`, `sunrise`); head script di `app/layout.tsx` menerapkan dari `localStorage` (anti-flash) sebelum React
+- Preferensi tema per-akun disimpan di `auth.users.user_metadata.theme` — simpan via `supabase.auth.updateUser({ data: { theme } })`; server membacanya di layout dan disinkronkan ke `<html>` via `ThemeSetter`; user memilih lewat `ThemePicker`
+- **Menambah tema baru = ubah di 3 tempat:** (1) blok CSS `[data-theme="..."]` di `app/globals.css` (+ `.dark` kalau perlu), (2) array `THEMES` di `components/theme-picker.tsx`, (3) whitelist array di head script `app/layout.tsx`
+- Jangan pakai React state untuk memilih ikon/elemen yang bergantung tema — pakai CSS (mis. arbitrary variant `[html[data-theme=kawaii]_&]:block`)
 
 ## Error Handling
 - Semua pemanggilan Supabase (`await supabase.from(...)`) harus cek `error` sebelum lanjut — jangan asumsikan selalu sukses

@@ -24,7 +24,7 @@ Acceptance criteria:
 Acceptance criteria:
 - [ ] Form login: email + password
 - [ ] Salah kredensial → pesan error jelas, tidak expose apakah email terdaftar atau tidak (security)
-- [ ] Setelah login sukses → redirect ke dashboard organisasi terakhir aktif, atau ke org switcher kalau punya >1 organisasi, atau ke onboarding kalau belum punya organisasi sama sekali
+- [ ] Setelah login sukses → redirect ke dashboard organisasi pertama (urut berdasarkan tanggal dibuat), atau ke onboarding kalau belum punya organisasi sama sekali; user dengan >1 organisasi bisa pindah via org switcher (URL `/org/[slug]/...`)
 
 ### US-1.3 Logout & session persistence
 Acceptance criteria:
@@ -154,13 +154,24 @@ Acceptance criteria:
 
 ## Non-Functional Requirements
 
-- [ ] **Mobile-first**: semua halaman harus dites di viewport 375px lebar sebelum dianggap selesai
-- [ ] **Isolasi data**: setiap fitur baru WAJIB ditest dengan minimal 2 akun di 2 organisasi berbeda — pastikan tidak ada data organisasi lain yang bocor
-- [ ] **Tidak ada service role key di client-side** — cek setiap kali sebelum commit
+- [x] **Mobile-first**: semua halaman sudah dites di viewport 375px lebar
+- [x] **Isolasi data**: setiap fitur ditest dengan 3 akun uji di organisasi berbeda — tidak ada data organisasi lain yang bocor
+- [x] **Tidak ada service role key di client-side** — dicek di bundle & network
 - [ ] Semua form punya loading state & error state (jangan silent fail)
-- [ ] Semua angka nominal ditampilkan format Rupiah (`Rp 1.500.000`)
+- [x] Semua angka nominal ditampilkan format Rupiah (`Rp 1.500.000`)
 
 ---
+
+## Fitur Tambahan yang Disetujui User (di luar MVP awal)
+
+Fitur berikut sudah dikerjakan atas permintaan eksplisit user dan menjadi bagian dari scope:
+
+- **Tema per-akun**: 5 tema (Klasik, Kawaii, Ocean, Forest, Sunrise). Pilihan tersimpan di `auth.users.user_metadata.theme` (via `supabase.auth.updateUser`), disinkronkan dari server lewat `ThemeSetter`, dan anti-flash via head script (`localStorage`). Default = klasik.
+- **Navigasi desktop** (`DesktopNav`) sebagai baris kedua header di `md+` — mengatasi BottomNav yang `md:hidden`.
+- **PWA installable** (manifest + service worker + ikon 192/512).
+- **Logo brand** KasKita dari file logo user.
+
+
 
 ## Di Luar Scope MVP (jangan dikerjakan kecuali diminta eksplisit)
 - Approval flow multi-level

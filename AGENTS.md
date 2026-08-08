@@ -29,6 +29,8 @@ Next.js **App Router** + TypeScript + Tailwind (satu-satunya cara styling) + sha
 - Setiap `await supabase...` wajib cek `error`; jangan asumsikan sukses. Tampilkan pesan error yang manusiawi, bukan raw error object.
 - Server Component sebagai default; `'use client'` hanya kalau butuh interaktivitas (form, state, event handler).
 - Supabase client: Server Component → `lib/supabase/server.ts`, Client Component → `lib/supabase/client.ts`. Jangan tertukar.
+- Tema di-set via atribut `data-theme` pada `<html>`; 5 tema terdaftar di `components/theme-picker.tsx` (`THEMES`) + whitelist head script `app/layout.tsx`. Menambah tema = ubah 3 tempat: blok CSS `[data-theme=...]` di `app/globals.css`, array `THEMES`, dan whitelist script.
+- Preferensi tema per-akun disimpan di `auth.users.user_metadata.theme` (via `supabase.auth.updateUser`); server membacanya di layout dan menyinkronkan ke `data-theme` lewat `ThemeSetter`.
 - Form: react-hook-form + zod; definisi skema zod SEKALI di `lib/types.ts` (atau file schema terpisah), dipakai ulang di form & API — jangan duplikasi.
 - Mobile-first: cek semua halaman di viewport 375px; touch target minimal 44x44px; `inputMode="numeric"` untuk nominal; nominal format Rupiah `Rp 1.500.000`. Default style = mobile, baru `sm:`/`md:`/`lg:` untuk layar besar.
 - File komponen `kebab-case.tsx`, nama komponen `PascalCase`.
@@ -58,7 +60,7 @@ Mengubah skema DB yang sudah dijalankan, menambah dependency baru, mengubah RLS 
 ## Struktur folder (sesuai arsitektur section 7)
 
 - `app/(auth)/` — login, register, reset-password
-- `app/(dashboard)/` — onboarding + `org/[slug]/` (dashboard, transactions, reports, members, settings)
+- `app/(dashboard)/` — onboarding + `org/[slug]/` (dashboard, transactions, categories, reports, members, settings)
 - `app/api/` — hanya untuk undangan/report/logic ber-privilege
 - `components/ui/` — shadcn; `lib/supabase/` — client.ts/server.ts/middleware.ts
 - `proxy.ts` (Next 16: pengganti `middleware.ts`) — proteksi route/refresh session; `lib/supabase/middleware.ts` — helper `updateSession`; `supabase/migrations/` — SQL migration

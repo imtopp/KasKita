@@ -1,36 +1,52 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# KasKita
 
-## Getting Started
+Platform kas organisasi (multi-tenant) — catat pemasukan/pengeluaran untuk RT, arisan, komunitas, dll. Dibangun dengan **Next.js (App Router)** + **Supabase** (Auth + Postgres + RLS) + **Tailwind CSS** + **shadcn/ui**.
 
-First, run the development server:
+**Production:** <https://kas-kita-delta.vercel.app>
+
+## Stack
+
+- Next.js 16 (App Router) + TypeScript + Tailwind CSS v4
+- Supabase: Postgres + Row Level Security (isolasi data per organisasi), Auth, Storage
+- react-hook-form + zod (validasi form)
+- shadcn/ui (Base UI)
+- Deploy: Vercel (auto-deploy dari branch `main`)
+
+## Fitur
+
+- Auth: register, login, logout, reset password, wajib ganti password untuk akun yang dibuat manual
+- Organisasi: buat organisasi, switcher multi-organisasi, isolasi data penuh via RLS
+- Transaksi: catat masuk/keluar, kategori per organisasi, filter, edit, hapus
+- Dashboard & laporan bulanan (ringkasan per kategori)
+- Kelola anggota: undang via email, daftarkan manual (password sementara), ubah role, hapus
+- **Tema per-akun**: 5 tema (Klasik, Kawaii, Ocean, Forest, Sunrise) — pilihan tersimpan di akun
+- Mobile-first + PWA (Add to Home Screen)
+
+## Menjalankan di lokal
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+> Di Windows, bila `npm.ps1` diblokir execution policy, pakai `npm.cmd`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Environment variables
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Salin `.env.local.example` → `.env.local`:
 
-## Learn More
+```env
+NEXT_PUBLIC_SUPABASE_URL=...
+NEXT_PUBLIC_SUPABASE_ANON_KEY=...
+SUPABASE_SERVICE_ROLE_KEY=...   # server-only, JANGAN pernah di client
+```
 
-To learn more about Next.js, take a look at the following resources:
+## Struktur folder
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- `app/(auth)/` — login, register, reset-password, update-password
+- `app/(dashboard)/` — onboarding + `org/[slug]/` (dashboard, transactions, categories, reports, members, settings)
+- `app/api/` — hanya undangan & kelola anggota (butuh `service_role`)
+- `components/ui/` — shadcn; `lib/supabase/` — client/server/middleware
+- `proxy.ts` — proteksi route & refresh session (Next 16, pengganti `middleware.ts`)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Dokumen acuan: `rancangan-arsitektur-kas-platform.md`, `02-requirements-prd.md`, `03-database-migration.sql`, `04-coding-standards.md`, `05-task-breakdown.md`, `AGENTS.md`.

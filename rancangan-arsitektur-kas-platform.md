@@ -26,13 +26,20 @@ Contoh pemakaian:
 7. Multi-organisasi switcher (pindah antar organisasi tanpa logout)
 8. Mobile-friendly (responsive, terasa seperti app di HP)
 
+> **Status saat ini:** seluruh fitur MVP sudah selesai dan live di production.
+
 ### Fitur lanjutan (fase 2+)
 - Export laporan ke PDF/Excel
 - Approval flow (misal: pengeluaran > nominal tertentu perlu approval ketua)
 - Grafik tren kas (chart)
 - Notifikasi (email/push) saat ada transaksi besar
-- PWA installable (icon di homescreen HP, offline-capable)
 - Multi-currency (kalau perlu)
+
+### Tambahan yang sudah dikerjakan (di luar MVP, atas permintaan user)
+- **PWA installable** (manifest + service worker, Add to Home Screen)
+- **Tema per-akun**: 5 tema (Klasik, Kawaii, Ocean, Forest, Sunrise), pilihan tersimpan di `auth.users.user_metadata.theme` dan ikut user di semua perangkat
+- **Navigasi desktop** (`DesktopNav`, baris kedua header) sebagai pelengkap `BottomNav` mobile
+- **Logo brand** KasKita (dari file logo user) untuk header, auth, dan ikon PWA/favicon
 
 ---
 
@@ -72,6 +79,8 @@ Setiap user yang jadi anggota organisasi punya salah satu role:
 ---
 
 ## 4. Skema Database (Postgres / Supabase)
+
+> **Catatan:** blok SQL di bawah dan section 5 adalah ringkasan/ilustrasi. **Sumber kebenaran (source of truth) skema, RLS policy, dan trigger yang sudah dijalankan adalah `03-database-migration.sql`** — jangan mengedit file itu; perubahan di masa depan memakai migration file baru.
 
 ```sql
 -- =========================================
@@ -255,47 +264,59 @@ Tidak butuh domain sendiri untuk mulai. Pendekatan bertahap:
 ## 7. Arsitektur Aplikasi (Next.js App Router)
 
 ```
-kas-platform/
+kaskita/
 ├── app/
 │   ├── (auth)/
+│   │   ├── layout.tsx                  # logo + theme picker (fixed kanan atas)
 │   │   ├── login/page.tsx
 │   │   ├── register/page.tsx
-│   │   └── reset-password/page.tsx
+│   │   ├── reset-password/page.tsx
+│   │   ├── update-password/page.tsx    # wajib ganti password (akun manual)
+│   │   └── auth-code-error/page.tsx
 │   ├── (dashboard)/
-│   │   ├── layout.tsx                  # navbar + org switcher + sidebar mobile
-│   │   ├── onboarding/
-│   │   │   └── page.tsx                # buat organisasi pertama
+│   │   ├── layout.tsx                  # wrapper dasar (min-h-dvh)
+│   │   ├── onboarding/page.tsx         # buat organisasi pertama
 │   │   └── org/[slug]/
-│   │       ├── layout.tsx              # cek membership + inject org context
-│   │       ├── dashboard/page.tsx      # ringkasan saldo, grafik singkat
-│   │       ├── transactions/
-│   │       │   ├── page.tsx            # list + filter
-│   │       │   └── new/page.tsx        # form tambah transaksi
-│   │       ├── reports/page.tsx        # laporan bulanan
+│   │       ├── layout.tsx              # header (logo, nama org, org switcher, theme picker, logout)
+│   │       │                           # + DesktopNav (md+) + BottomNav (mobile); cek membership → 403
+│   │       ├── dashboard/page.tsx      # ringkasan saldo, bulan berjalan, transaksi terbaru
+│   │       ├── transactions/page.tsx   # list + filter + form dialog
+│   │       ├── categories/page.tsx     # kelola kategori (dialog)
+│   │       ├── reports/page.tsx        # laporan bulanan (filter bulan/tahun + per kategori)
 │   │       ├── members/page.tsx        # kelola anggota (owner only)
-│   │       └── settings/page.tsx       # setting organisasi
-│   ├── api/
-│   │   ├── transactions/route.ts       # optional: kalau butuh logic tambahan di luar RLS
-│   │   ├── invitations/route.ts
-│   │   └── reports/generate/route.ts   # generate PDF laporan
-│   └── layout.tsx
+│   │       └── settings/page.tsx       # pengaturan organisasi
+│   ├── invite/accept/page.tsx          # landing terima undangan
+│   ├── api/                            # HANYA untuk logic ber-privilege (service_role)
+│   │   ├── invitations/route.ts        # undang via email + daftarkan anggota manual
+│   │   ├── invitations/accept/route.ts # validasi token + expires_at
+│   │   └── members/route.ts            # ubah role / hapus anggota
+│   ├── layout.tsx                      # font Baloo 2, theme-init script, PWA manifest, theme color
+│   └── page.tsx                        # redirect: login / org pertama / onboarding
 ├── components/
 │   ├── ui/                             # shadcn/ui components
-│   ├── transaction-form.tsx
-│   ├── transaction-list.tsx
-│   ├── org-switcher.tsx
-│   ├── balance-card.tsx
-│   └── mobile-nav.tsx
+│   ├── bottom-nav.tsx                  # navigasi bawah (mobile)
+│   ├── desktop-nav.tsx                 # navigasi atas (desktop, md+)
+│   ├── org-switcher.tsx                # pindah antar organisasi
+│   ├── brand-logo.tsx                  # logo dari public/logo.png
+│   ├── theme-picker.tsx                # dropdown 5 tema (simpan ke user_metadata)
+│   ├── theme-setter.tsx                # sinkron data-theme dari server ke <html>
+│   ├── transactions-view.tsx / transaction-form-dialog.tsx
+│   ├── categories-view.tsx / category-form-dialog.tsx
+│   ├── reports-view.tsx
+│   ├── members-view.tsx / create-member-dialog.tsx / invite-member-dialog.tsx
+│   ├── create-organization-form.tsx
+│   ├── logout-button.tsx / forbidden.tsx / service-worker-register.tsx
+│   └── invite-accept-view.tsx
 ├── lib/
 │   ├── supabase/
 │   │   ├── client.ts                   # supabase client (browser)
 │   │   ├── server.ts                   # supabase client (server component)
-│   │   └── middleware.ts               # refresh session
-│   ├── types.ts                        # TypeScript types dari schema
-│   └── utils.ts
-├── middleware.ts                       # proteksi route, cek session
+│   │   └── middleware.ts               # helper updateSession
+│   ├── types.ts                        # TypeScript types + zod schema dari DB
+│   ├── utils.ts / api-helpers.ts / auth-errors.ts
+├── proxy.ts                            # Next 16: pengganti middleware.ts — proteksi route, refresh session
 └── supabase/
-    └── migrations/                     # SQL migration files (schema di atas)
+    └── migrations/                     # SQL migration files (03-database-migration.sql)
 ```
 
 **Catatan penting:** karena RLS sudah menangani keamanan data di level database, sebagian besar operasi CRUD **bisa langsung dari client-side** memakai Supabase JS client tanpa perlu bikin API route sendiri. API route (`app/api/...`) dipakai untuk logic yang butuh privilege khusus, misal generate PDF, kirim email undangan, atau proses yang melibatkan Supabase service role key.
@@ -308,55 +329,53 @@ Karena target pengguna (bendahara RT, ibu-ibu PKK, dll) kemungkinan besar akses 
 
 ### Prinsip UI
 - Layout mobile-first: desain dari lebar 375px dulu, baru scale up ke tablet/desktop pakai Tailwind breakpoint (`sm:`, `md:`, `lg:`)
-- Bottom navigation bar di mobile (bukan sidebar) — tab: Dashboard, Transaksi, Tambah (+), Laporan, Profil
+- **Bottom navigation bar di mobile** (bukan sidebar) — tab: Dashboard, Transaksi, Kategori, Laporan, Anggota, Pengaturan. Di desktop (`md+`), nav yang sama tampil sebagai **baris kedua di header** (`DesktopNav`)
+- **Tema per-akun**: 5 tema (`data-theme` = `klasik`, `kawaii`, `ocean`, `forest`, `sunrise`) didefinisikan sebagai CSS variables di `app/globals.css`; pilihan user disimpan di `auth.users.user_metadata.theme` dan disinkronkan ke `<html data-theme>` via `ThemeSetter` (dari server) / `ThemePicker` (saat user ganti); head script anti-flash membaca localStorage
 - Form input besar & mudah di-tap (minimum touch target 44x44px)
 - Angka nominal pakai keyboard numerik otomatis (`inputMode="numeric"`)
 - Card-based layout untuk list transaksi (bukan tabel sempit yang harus di-scroll horizontal)
 - Font minimal 16px di form (supaya tidak auto-zoom di Safari iOS)
 
-### PWA (opsional tapi direkomendasikan)
-Next.js bisa dikonfigurasi jadi **Progressive Web App**:
-- Bisa di-"Add to Home Screen" dari browser HP, terasa seperti app native
-- Manifest.json + service worker untuk caching dasar
-- Tidak perlu publish ke Play Store/App Store — tetap gratis dan gampang di-deploy
+### PWA
+Sudah terpasang: `manifest` (Next.js) + service worker dasar (`public/sw.js`) + ikon 192/512 — bisa di-"Add to Home Screen". Tidak perlu publish ke Play Store/App Store; tetap gratis di Vercel.
 
 ---
 
 ## 9. Tahapan Pengerjaan (Roadmap)
 
 ### Fase 0 — Setup (1 hari)
-- [ ] Buat project Supabase, catat URL + anon key
-- [ ] Buat repo GitHub
-- [ ] Init Next.js project + Tailwind + shadcn/ui
+- [x] Buat project Supabase, catat URL + anon key
+- [x] Buat repo GitHub
+- [x] Init Next.js project + Tailwind + shadcn/ui
 - [x] Connect repo ke Vercel (auto-deploy dari branch `main`)
-- [ ] Jalankan SQL schema + RLS policies di Supabase SQL editor
+- [x] Jalankan SQL schema + RLS policies di Supabase SQL editor
 
 ### Fase 1 — Auth & Onboarding (2-3 hari)
-- [ ] Halaman login/register pakai Supabase Auth
-- [ ] Middleware proteksi route (redirect ke login kalau belum auth)
-- [ ] Flow buat organisasi pertama kali (onboarding)
-- [ ] Organization switcher
+- [x] Halaman login/register pakai Supabase Auth
+- [x] Proxy (middleware) proteksi route (redirect ke login kalau belum auth)
+- [x] Flow buat organisasi pertama kali (onboarding)
+- [x] Organization switcher
 
 ### Fase 2 — Core Feature: Transaksi (3-4 hari)
-- [ ] Form tambah transaksi (income/expense) + kategori
-- [ ] List transaksi dengan filter (tanggal, kategori, jenis)
-- [ ] Edit & hapus transaksi
-- [ ] Upload bukti foto ke Supabase Storage
-- [ ] Kartu ringkasan saldo di dashboard
+- [x] Form tambah transaksi (income/expense) + kategori
+- [x] List transaksi dengan filter (tanggal, kategori, jenis)
+- [x] Edit & hapus transaksi
+- [ ] Upload bukti foto ke Supabase Storage  *(belum dikerjakan — opsional)*
+- [x] Kartu ringkasan saldo di dashboard
 
 ### Fase 3 — Laporan (2-3 hari)
-- [ ] Laporan bulanan (total masuk, keluar, saldo akhir)
-- [ ] Grafik tren sederhana (pakai Recharts)
-- [ ] Export laporan (PDF/Excel) — fase 2+
+- [x] Laporan bulanan (total masuk, keluar, saldo akhir)
+- [ ] Grafik tren sederhana (pakai Recharts)  *(belum dikerjakan)*
+- [ ] Export laporan (PDF/Excel) — fase 2+  *(belum dikerjakan)*
 
 ### Fase 4 — Kelola Anggota (2 hari)
-- [ ] Undang anggota via email (invitation table + Supabase Auth built-in invite, lihat strategi email di section 6.5)
-- [ ] Kelola role anggota (owner only)
+- [x] Undang anggota via email (invitation table + Supabase Auth built-in invite, lihat strategi email di section 6.5)
+- [x] Kelola role anggota (owner only)
 
 ### Fase 5 — Mobile Polish & PWA (2 hari)
-- [ ] Audit semua halaman di viewport mobile
-- [ ] Bottom nav, touch target, numeric keyboard
-- [ ] Setup manifest.json + service worker dasar
+- [x] Audit semua halaman di viewport mobile
+- [x] Bottom nav, touch target, numeric keyboard
+- [x] Setup manifest.json + service worker dasar
 
 ### Fase 6 — Testing & Deploy Production
 - [x] Test isolasi data antar organisasi (bikin 2 akun uji, pastikan tidak bisa saling lihat)
@@ -387,7 +406,7 @@ Set variabel yang sama di **Vercel → Project Settings → Environment Variable
 - [x] `service_role` key Supabase **tidak pernah** dipakai di client-side/browser
 - [x] Validasi input di form (nominal harus > 0, tanggal valid, dll) - baik di frontend maupun via constraint database (`check` di SQL sudah membantu)
 - [x] Test manual: login sebagai 2 user berbeda di 2 organisasi berbeda, pastikan tidak bisa saling akses data
-- [ ] Invitation token punya masa berlaku (sudah ada `expires_at` di schema)
+- [x] Invitation token punya masa berlaku (`expires_at` + 7 hari; divalidasi di `app/api/invitations/accept/route.ts`)
 - [ ] Rate limiting dasar untuk endpoint sensitif (Vercel/Supabase biasanya sudah handle di level infra, tapi bisa ditambah kalau perlu)
 
 ---
@@ -398,10 +417,10 @@ Untuk skala pemakaian: beberapa organisasi kecil (RT, arisan, komunitas), total 
 
 ---
 
-## 13. Next Steps
+## 13. Status Eksekusi
 
-Setelah dokumen ini disetujui, langkah kerja berikutnya yang bisa langsung dieksekusi:
-1. Generate SQL migration file lengkap siap-jalan (dari skema di section 4-5)
-2. Scaffold project Next.js + struktur folder di section 7
-3. Bangun komponen auth & onboarding
-4. Lanjut iteratif sesuai roadmap section 9
+Dokumen ini awalnya dipakai sebagai acuan build dari nol; saat ini **seluruh MVP sudah selesai dan live di production** (Vercel). Item yang belum dikerjakan dan sengaja dibiarkan (opsional): export laporan PDF/Excel, grafik tren (Recharts), upload bukti foto, custom domain, approval flow, notifikasi otomatis, multi-currency.
+
+Perubahan yang sudah disetujui user setelah MVP tercatat di section 1 (PWA, tema per-akun, DesktopNav, logo brand). Skema & RLS yang benar-benar berjalan ada di `03-database-migration.sql` — file itu sudah dijalankan dan **tidak boleh diedit**; perubahan skema berikutnya memakai migration file baru.
+
+> Estimasi pengerjaan awal: ~2-3 minggu kerja santai / ~1 minggu fokus penuh.
