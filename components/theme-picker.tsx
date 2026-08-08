@@ -68,7 +68,7 @@ export function ThemePicker({
       >
         <SelectValue />
       </SelectTrigger>
-      <SelectContent align="end" className="p-2">
+      <SelectContent align="end">
         {THEMES.map((t) => (
           <SelectItem key={t.id} value={t.id}>
             <span className="flex items-center gap-2">
