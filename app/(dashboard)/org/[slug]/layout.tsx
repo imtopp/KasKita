@@ -6,6 +6,7 @@ import { DesktopNav } from "@/components/desktop-nav";
 import { Forbidden } from "@/components/forbidden";
 import { LogoutButton } from "@/components/logout-button";
 import { OrgSwitcher } from "@/components/org-switcher";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function OrgLayout({
@@ -57,6 +58,7 @@ export default async function OrgLayout({
           </div>
           <div className="ml-auto flex items-center gap-2">
             <OrgSwitcher orgs={orgs ?? []} activeSlug={slug} />
+            <ThemeToggle />
             <LogoutButton className="hidden h-9 px-3 text-sm md:inline-flex" />
           </div>
         </div>

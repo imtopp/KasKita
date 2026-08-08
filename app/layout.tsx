@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Baloo_2 } from "next/font/google";
+import Script from "next/script";
 
 import { ServiceWorkerRegister } from "@/components/service-worker-register";
 import "./globals.css";
@@ -29,7 +30,14 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="id" className={`${baloo.variable} h-full antialiased`}>
+    <html
+      lang="id"
+      suppressHydrationWarning
+      className={`${baloo.variable} h-full antialiased`}
+    >
+      <Script id="theme-init" strategy="beforeInteractive">
+        {`(function(){try{var t=localStorage.getItem("kaskita-theme");if(t!=="kawaii"){t="klasik";}document.documentElement.dataset.theme=t;}catch(e){document.documentElement.dataset.theme="klasik";}})();`}
+      </Script>
       <body className="min-h-full flex flex-col">
         {children}
         <ServiceWorkerRegister />

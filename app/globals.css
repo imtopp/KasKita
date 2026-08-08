@@ -47,7 +47,44 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-:root {
+:root,
+[data-theme="klasik"] {
+  --background: #fafafa;
+  --foreground: #18181b;
+  --card: #ffffff;
+  --card-foreground: #18181b;
+  --popover: #ffffff;
+  --popover-foreground: #18181b;
+  --primary: #0f766e;
+  --primary-foreground: #ffffff;
+  --secondary: #f4f4f5;
+  --secondary-foreground: #18181b;
+  --muted: #f4f4f5;
+  --muted-foreground: #71717a;
+  --accent: #ecfdf5;
+  --accent-foreground: #064e3b;
+  --destructive: #f87171;
+  --destructive-foreground: #7f1d1d;
+  --border: #e4e4e7;
+  --input: #e4e4e7;
+  --ring: #0f766e;
+  --chart-1: #0f766e;
+  --chart-2: #f59e0b;
+  --chart-3: #3b82f6;
+  --chart-4: #8b5cf6;
+  --chart-5: #f43f5e;
+  --radius: 1.25rem;
+  --sidebar: #fafafa;
+  --sidebar-foreground: #18181b;
+  --sidebar-primary: #0f766e;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f4f4f5;
+  --sidebar-accent-foreground: #18181b;
+  --sidebar-border: #e4e4e7;
+  --sidebar-ring: #0f766e;
+}
+
+[data-theme="kawaii"] {
   --background: #fff7fb;
   --foreground: #5a4a54;
   --card: #ffffff;
@@ -84,6 +121,41 @@
 }
 
 .dark {
+  --background: #18181b;
+  --foreground: #fafafa;
+  --card: #27272a;
+  --card-foreground: #fafafa;
+  --popover: #27272a;
+  --popover-foreground: #fafafa;
+  --primary: #2dd4bf;
+  --primary-foreground: #042f2e;
+  --secondary: #3f3f46;
+  --secondary-foreground: #fafafa;
+  --muted: #3f3f46;
+  --muted-foreground: #a1a1aa;
+  --accent: #134e4a;
+  --accent-foreground: #99f6e4;
+  --destructive: #f87171;
+  --destructive-foreground: #450a0a;
+  --border: #3f3f46;
+  --input: #3f3f46;
+  --ring: #2dd4bf;
+  --chart-1: #2dd4bf;
+  --chart-2: #f59e0b;
+  --chart-3: #3b82f6;
+  --chart-4: #8b5cf6;
+  --chart-5: #f43f5e;
+  --sidebar: #18181b;
+  --sidebar-foreground: #fafafa;
+  --sidebar-primary: #2dd4bf;
+  --sidebar-primary-foreground: #042f2e;
+  --sidebar-accent: #3f3f46;
+  --sidebar-accent-foreground: #fafafa;
+  --sidebar-border: #3f3f46;
+  --sidebar-ring: #2dd4bf;
+}
+
+[data-theme="kawaii"].dark {
   --background: #2a2226;
   --foreground: #f5e9ef;
   --card: #3a2f35;
