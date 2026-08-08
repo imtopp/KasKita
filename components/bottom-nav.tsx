@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { NavLinkIcon } from "@/components/nav-link-icon";
 
 const items = [
   { href: "dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -42,7 +43,7 @@ export function BottomNav({ slug }: { slug: string }) {
                   : "text-muted-foreground",
               )}
             >
-              <item.icon className="size-5" />
+              <NavLinkIcon icon={item.icon} size="size-5" />
               {item.label}
             </Link>
           );

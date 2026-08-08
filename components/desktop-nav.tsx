@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { NavLinkIcon } from "@/components/nav-link-icon";
 
 const items = [
   { href: "dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -45,7 +46,7 @@ export function DesktopNav({ slug }: { slug: string }) {
                   : "text-muted-foreground hover:bg-muted hover:text-foreground",
               )}
             >
-              <item.icon className="size-4" />
+              <NavLinkIcon icon={item.icon} size="size-4" />
               {item.label}
             </Link>
           );
