@@ -49,6 +49,7 @@ Salin `.env.local.example` → `.env.local`; jangan commit `.env.local` atau kre
 - JANGAN ubah skema / RLS policy / trigger yang sudah ada tanpa konfirmasi user.
 - Storage bucket `receipts` dibuat manual di Supabase Dashboard.
 - Setiap fitur wajib lolos uji isolasi data (2 akun di 2 organisasi berbeda, tidak boleh saling lihat).
+- GOTCHA RLS: `INSERT ... RETURNING` (yaitu `.insert(...).select(...)` di supabase-js) dievaluasi ulang terhadap policy SELECT, dan snapshot command TIDAK melihat baris yang baru dibuat trigger AFTER (mis. membership creator). Akibatnya insert yang pakai `.select()` bisa ditolak RLS walau `with check` lolos. Untuk baris yang baru dibuat, gunakan insert tanpa `.select()` lalu baca ulang / pakai nilai yang sudah diketahui client.
 
 ## Yang TIDAK boleh dilakukan tanpa konfirmasi user
 
