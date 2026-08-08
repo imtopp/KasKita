@@ -110,18 +110,30 @@ export function TransactionsView({
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-xl font-bold">Transaksi</h1>
         {canManage && (
-          <Button
-            onClick={() => {
-              setEditing(null);
-              setFormOpen(true);
-            }}
-            className="h-11 px-4 text-base"
-          >
-            Tambah transaksi
-          </Button>
+          <div className="flex shrink-0 gap-2">
+            <Button
+              variant="outline"
+              className="h-11 px-4 text-base"
+              onClick={() => {
+                const slug = pathname.split("/")[2];
+                router.push(`/org/${slug}/categories`);
+              }}
+            >
+              Kelola kategori
+            </Button>
+            <Button
+              onClick={() => {
+                setEditing(null);
+                setFormOpen(true);
+              }}
+              className="h-11 px-4 text-base"
+            >
+              Tambah transaksi
+            </Button>
+          </div>
         )}
       </div>
 

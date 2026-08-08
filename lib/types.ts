@@ -68,10 +68,30 @@ export type UpdatePasswordForm = z.infer<typeof updatePasswordSchema>;
 export type CreateOrganizationForm = z.infer<typeof createOrganizationSchema>;
 export type TransactionForm = z.infer<typeof transactionSchema>;
 
+export const categorySchema = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(1, "Nama kategori wajib diisi")
+    .max(40, "Nama kategori maksimal 40 karakter"),
+  type: z.enum(["income", "expense"]),
+});
+
+export type CategoryForm = z.infer<typeof categorySchema>;
+
 export type CategoryOption = {
   id: string;
   name: string;
   type: "income" | "expense";
+};
+
+export type CategoryRow = {
+  id: string;
+  organization_id: string;
+  name: string;
+  type: "income" | "expense";
+  is_deleted: boolean;
+  created_at: string;
 };
 
 export type TransactionRow = {
