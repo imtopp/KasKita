@@ -1,6 +1,5 @@
 import { notFound } from "next/navigation";
 
-import { LogoutButton } from "@/components/logout-button";
 import {
   Card,
   CardContent,
@@ -34,26 +33,22 @@ export default async function OrgDashboardPage({
     .eq("organization_id", org.id);
 
   return (
-    <main className="flex min-h-dvh flex-col items-center justify-center px-4 py-8">
-      <Card className="w-full max-w-sm">
+    <div className="space-y-4">
+      <h1 className="text-xl font-bold">Dashboard</h1>
+      <Card>
         <CardHeader>
           <CardTitle>{org.name}</CardTitle>
           <CardDescription>
-            Dashboard placeholder — tata letak lengkap menyusul.
+            Ringkasan saldo menyusul (TASK 6).
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-1 text-sm">
-            <p>
-              Slug: <code>{org.slug}</code>
-            </p>
-            <p>
-              Kategori default: {categoryCount ?? 0} (verifikasi trigger)
-            </p>
-          </div>
-          <LogoutButton />
+        <CardContent className="space-y-1 text-sm text-muted-foreground">
+          <p>
+            Slug: <code>{org.slug}</code>
+          </p>
+          <p>Kategori default: {categoryCount ?? 0} (verifikasi trigger)</p>
         </CardContent>
       </Card>
-    </main>
+    </div>
   );
 }

@@ -23,20 +23,22 @@ export default async function OnboardingPage() {
 
   const { data: orgs } = await supabase
     .from("organizations")
-    .select("slug")
-    .order("created_at", { ascending: true });
+    .select("id")
+    .limit(1);
 
-  if (orgs && orgs.length > 0) {
-    redirect(`/org/${orgs[0].slug}/dashboard`);
-  }
+  const hasOrgs = !!orgs && orgs.length > 0;
 
   return (
     <main className="flex min-h-dvh flex-col items-center justify-center px-4 py-8">
       <Card className="w-full max-w-sm">
         <CardHeader>
-          <CardTitle>Selamat datang di KasKita!</CardTitle>
+          <CardTitle>
+            {hasOrgs ? "Buat organisasi baru" : "Selamat datang di KasKita!"}
+          </CardTitle>
           <CardDescription>
-            Buat organisasi pertamamu untuk mulai mengelola kas.
+            {hasOrgs
+              ? "Buat organisasi lain untuk mulai mengelola kas terpisah."
+              : "Buat organisasi pertamamu untuk mulai mengelola kas."}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">

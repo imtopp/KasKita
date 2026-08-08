@@ -4,8 +4,9 @@ import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
+import { cn } from "@/lib/utils";
 
-export function LogoutButton() {
+export function LogoutButton({ className }: { className?: string }) {
   const router = useRouter();
   const supabase = createClient();
 
@@ -20,7 +21,7 @@ export function LogoutButton() {
     <Button
       variant="outline"
       onClick={handleLogout}
-      className="h-11 w-full text-base"
+      className={cn("h-11 w-full text-base", className)}
     >
       Keluar
     </Button>
