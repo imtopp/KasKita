@@ -15,7 +15,7 @@ Dokumen ini untuk dipegang AI coding assistant supaya hasil kerja konsisten wala
 - Nama folder route: sesuai struktur di dokumen arsitektur section 7 — jangan bikin struktur folder baru tanpa update dokumen arsitektur dulu
 - Server Component sebagai default; tambahkan `'use client'` HANYA kalau butuh interaktivitas (form, state, event handler)
 - Query ke Supabase di Server Component pakai `lib/supabase/server.ts`; di Client Component pakai `lib/supabase/client.ts` — jangan pernah tertukar
-- Navigasi: `BottomNav` untuk mobile, `DesktopNav` untuk `md+` (dipasang di org layout)
+- Navigasi: `BottomNav` untuk mobile, `DesktopNav` untuk `md+` (dipasang di org layout); spinner loading link via `NavLinkIcon` (`useLinkStatus` dari `next/link`)
 
 ## Data Access Pattern
 - **Selalu andalkan RLS**, jangan tulis manual filter `organization_id` di query sebagai satu-satunya lapisan keamanan (RLS = lapisan utama, filter manual di kode = defense-in-depth tambahan, bukan pengganti)
@@ -42,7 +42,8 @@ Dokumen ini untuk dipegang AI coding assistant supaya hasil kerja konsisten wala
 ## Error Handling
 - Semua pemanggilan Supabase (`await supabase.from(...)`) harus cek `error` sebelum lanjut — jangan asumsikan selalu sukses
 - Tampilkan pesan error yang manusiawi ke user (bukan raw error object dari Postgres/Supabase)
-- Loading state wajib ada di semua tombol submit / operasi async (disable tombol + spinner/text "Menyimpan...")
+- Loading state wajib ada di semua tombol submit / operasi async (disable tombol + spinner/text "Menyimpan..."); indikator harus **bertahan sampai proses selesai** — mis. tombol login/register tetap loading sampai halaman tujuan siap (state `redirecting`), jangan hilangkan indikator di tengah navigasi
+- Indikator loading saat pindah menu: skeleton konten lewat `loading.tsx` di segment route (`components/ui/skeleton.tsx`) + spinner di link navigasi pakai `useLinkStatus` (`components/nav-link-icon.tsx`) — ikuti pola ini, jangan bikin mekanisme baru
 
 ## Mobile-First
 - Semua komponen baru HARUS di-render dan dicek dulu di lebar 375px sebelum dianggap selesai

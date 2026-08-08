@@ -164,6 +164,10 @@ Perubahan berikut dikerjakan setelah production live, sebagai maintenance/fitur 
 - [x] Fitur: tema kawaii pastel untuk user tertentu (istri) vs netral untuk warga komplek → multi-tema
 - [x] Fitur: **tema per-akun (5 tema: Klasik, Kawaii, Ocean, Forest, Sunrise)** — pilihan tersimpan di `auth.users.user_metadata.theme`, sinkron lintas perangkat (`components/theme-picker.tsx` + `components/theme-setter.tsx`)
 - [x] Fix UI: dot warna dropdown tema terpotong lengkungan → padding `p-2` di `SelectContent`
+- [x] Fix UI: dropdown Select menampilkan label alih-alih value mentah (`items` auto-derive dari children di `components/ui/select.tsx`) + padding dropdown agar opsi tidak terpotong sudut membulat
+- [x] Fitur: indikator loading (spinner `Loader2` + `disabled`) di semua tombol aksi form (login, register, reset password, update password, transaksi, kategori, anggota, undangan, organisasi, logout, tema)
+- [x] Fix UX: tombol login/register tetap tampil loading sampai halaman tujuan siap (state `redirecting`) — hilangkan kesan "proses selesai tapi belum kelempar"
+- [x] Fitur: indikator loading saat pindah menu — skeleton konten (`org/[slug]/loading.tsx` + `components/ui/skeleton.tsx`) dan spinner di link navigasi (`components/nav-link-icon.tsx` via `useLinkStatus`)
 - [x] Doc sync: README + dokumen arsitektur/PRD/coding standards/task breakdown di-update agar konsisten dengan kondisi sekarang
 
 Catatan: perubahan ini tidak mengubah skema DB / RLS policy / trigger.

@@ -157,7 +157,7 @@ Acceptance criteria:
 - [x] **Mobile-first**: semua halaman sudah dites di viewport 375px lebar
 - [x] **Isolasi data**: setiap fitur ditest dengan 3 akun uji di organisasi berbeda — tidak ada data organisasi lain yang bocor
 - [x] **Tidak ada service role key di client-side** — dicek di bundle & network
-- [ ] Semua form punya loading state & error state (jangan silent fail)
+- [x] Semua form punya loading state & error state (jangan silent fail)
 - [x] Semua angka nominal ditampilkan format Rupiah (`Rp 1.500.000`)
 
 ---
@@ -170,6 +170,7 @@ Fitur berikut sudah dikerjakan atas permintaan eksplisit user dan menjadi bagian
 - **Navigasi desktop** (`DesktopNav`) sebagai baris kedua header di `md+` — mengatasi BottomNav yang `md:hidden`.
 - **PWA installable** (manifest + service worker + ikon 192/512).
 - **Logo brand** KasKita dari file logo user.
+- **Indikator loading**: spinner + `disabled` di semua tombol aksi; tombol login/register tetap loading sampai redirect ke halaman tujuan; saat pindah menu muncul skeleton konten (`loading.tsx`) + spinner di link navigasi (`useLinkStatus`).
 
 
 

@@ -20,6 +20,7 @@ Platform kas organisasi (multi-tenant) — catat pemasukan/pengeluaran untuk RT,
 - Dashboard & laporan bulanan (ringkasan per kategori)
 - Kelola anggota: undang via email, daftarkan manual (password sementara), ubah role, hapus
 - **Tema per-akun**: 5 tema (Klasik, Kawaii, Ocean, Forest, Sunrise) — pilihan tersimpan di akun
+- Indikator loading di semua aksi (spinner tombol/form) + skeleton & spinner saat pindah menu
 - Mobile-first + PWA (Add to Home Screen)
 
 ## Menjalankan di lokal

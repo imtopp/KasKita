@@ -279,6 +279,7 @@ kaskita/
 │   │   └── org/[slug]/
 │   │       ├── layout.tsx              # header (logo, nama org, org switcher, theme picker, logout)
 │   │       │                           # + DesktopNav (md+) + BottomNav (mobile); cek membership → 403
+│   │       ├── loading.tsx             # skeleton loading saat pindah menu (Suspense)
 │   │       ├── dashboard/page.tsx      # ringkasan saldo, bulan berjalan, transaksi terbaru
 │   │       ├── transactions/page.tsx   # list + filter + form dialog
 │   │       ├── categories/page.tsx     # kelola kategori (dialog)
@@ -296,6 +297,7 @@ kaskita/
 │   ├── ui/                             # shadcn/ui components
 │   ├── bottom-nav.tsx                  # navigasi bawah (mobile)
 │   ├── desktop-nav.tsx                 # navigasi atas (desktop, md+)
+│   ├── nav-link-icon.tsx               # spinner loading link nav (useLinkStatus)
 │   ├── org-switcher.tsx                # pindah antar organisasi
 │   ├── brand-logo.tsx                  # logo dari public/logo.png
 │   ├── theme-picker.tsx                # dropdown 5 tema (simpan ke user_metadata)
@@ -335,6 +337,7 @@ Karena target pengguna (bendahara RT, ibu-ibu PKK, dll) kemungkinan besar akses 
 - Angka nominal pakai keyboard numerik otomatis (`inputMode="numeric"`)
 - Card-based layout untuk list transaksi (bukan tabel sempit yang harus di-scroll horizontal)
 - Font minimal 16px di form (supaya tidak auto-zoom di Safari iOS)
+- **Feedback loading**: semua aksi menampilkan indikator — spinner tombol (`Loader2` + `disabled`), skeleton konten (`loading.tsx`), spinner di link nav (`useLinkStatus`) — supaya tidak ada jeda tanpa tanda; tombol login/register bertahan loading sampai halaman tujuan siap
 
 ### PWA
 Sudah terpasang: `manifest` (Next.js) + service worker dasar (`public/sw.js`) + ikon 192/512 — bisa di-"Add to Home Screen". Tidak perlu publish ke Play Store/App Store; tetap gratis di Vercel.
