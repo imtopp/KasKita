@@ -359,8 +359,8 @@ Next.js bisa dikonfigurasi jadi **Progressive Web App**:
 - [ ] Setup manifest.json + service worker dasar
 
 ### Fase 6 — Testing & Deploy Production
-- [ ] Test isolasi data antar organisasi (bikin 2 akun uji, pastikan tidak bisa saling lihat)
-- [ ] Test role-based access (viewer tidak bisa edit, dll)
+- [x] Test isolasi data antar organisasi (bikin 2 akun uji, pastikan tidak bisa saling lihat)
+- [x] Test role-based access (viewer tidak bisa edit, dll)
 - [ ] Deploy final ke Vercel production
 - [ ] Setup custom domain (opsional, kalau punya domain sendiri)
 
@@ -383,10 +383,10 @@ Set variabel yang sama di **Vercel → Project Settings → Environment Variable
 
 ## 11. Checklist Keamanan
 
-- [ ] RLS aktif di **semua** tabel yang menyimpan data organisasi
-- [ ] `service_role` key Supabase **tidak pernah** dipakai di client-side/browser
-- [ ] Validasi input di form (nominal harus > 0, tanggal valid, dll) — baik di frontend maupun via constraint database (`check` di SQL sudah membantu)
-- [ ] Test manual: login sebagai 2 user berbeda di 2 organisasi berbeda, pastikan tidak bisa saling akses data
+- [x] RLS aktif di **semua** tabel yang menyimpan data organisasi
+- [x] `service_role` key Supabase **tidak pernah** dipakai di client-side/browser
+- [x] Validasi input di form (nominal harus > 0, tanggal valid, dll) - baik di frontend maupun via constraint database (`check` di SQL sudah membantu)
+- [x] Test manual: login sebagai 2 user berbeda di 2 organisasi berbeda, pastikan tidak bisa saling akses data
 - [ ] Invitation token punya masa berlaku (sudah ada `expires_at` di schema)
 - [ ] Rate limiting dasar untuk endpoint sensitif (Vercel/Supabase biasanya sudah handle di level infra, tapi bisa ditambah kalau perlu)
 

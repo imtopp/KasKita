@@ -136,10 +136,10 @@ Referensi dokumen lain:
 ## TASK 9 — Testing Isolasi Data & Security Final Check
 **Dependency:** semua task di atas selesai
 
-- [ ] Buat 3 akun uji: masing-masing di organisasi berbeda, lalu 1 akun jadi anggota di 2 organisasi
-- [ ] Pastikan tidak ada kebocoran data antar organisasi di SEMUA fitur (dashboard, transaksi, kategori, laporan, anggota)
-- [ ] Cek tidak ada `service_role` key yang ke-expose di client-side (inspect network tab & bundle)
-- [ ] Cek semua route dashboard butuh auth (tidak bisa diakses tanpa login)
+- [x] Buat 3 akun uji: masing-masing di organisasi berbeda, lalu 1 akun jadi anggota di 2 organisasi
+- [x] Pastikan tidak ada kebocoran data antar organisasi di SEMUA fitur (dashboard, transaksi, kategori, laporan, anggota)
+- [x] Cek tidak ada `service_role` key yang ke-expose di client-side (inspect network tab & bundle)
+- [x] Cek semua route dashboard butuh auth (tidak bisa diakses tanpa login)
 
 **Definition of Done:** checklist keamanan di section 11 dokumen arsitektur semua tercentang.
 
