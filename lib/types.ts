@@ -47,8 +47,41 @@ export const createOrganizationSchema = z.object({
     ),
 });
 
+export const transactionSchema = z.object({
+  type: z.enum(["income", "expense"]),
+  category_id: z.string().min(1, "Pilih kategori"),
+  amount: z
+    .string()
+    .min(1, "Nominal wajib diisi")
+    .regex(/^\d{1,10}(\.\d{1,2})?$/, "Nominal tidak valid"),
+  transaction_date: z.string().min(1, "Tanggal wajib diisi"),
+  description: z
+    .string()
+    .trim()
+    .max(200, "Deskripsi maksimal 200 karakter"),
+});
+
 export type LoginForm = z.infer<typeof loginSchema>;
 export type RegisterForm = z.infer<typeof registerSchema>;
 export type ResetPasswordForm = z.infer<typeof resetPasswordSchema>;
 export type UpdatePasswordForm = z.infer<typeof updatePasswordSchema>;
 export type CreateOrganizationForm = z.infer<typeof createOrganizationSchema>;
+export type TransactionForm = z.infer<typeof transactionSchema>;
+
+export type CategoryOption = {
+  id: string;
+  name: string;
+  type: "income" | "expense";
+};
+
+export type TransactionRow = {
+  id: string;
+  organization_id: string;
+  category_id: string | null;
+  type: "income" | "expense";
+  amount: number;
+  description: string | null;
+  transaction_date: string;
+  created_by: string;
+  categories: { name: string } | null;
+};

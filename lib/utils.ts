@@ -14,3 +14,25 @@ export function slugify(input: string): string {
     .replace(/^-+|-+$/g, "")
     .slice(0, 63);
 }
+
+export function formatRupiah(value: number): string {
+  return "Rp " + value.toLocaleString("id-ID", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  });
+}
+
+export function todayISO(): string {
+  const now = new Date();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${now.getFullYear()}-${month}-${day}`;
+}
+
+export function formatDateID(date: string): string {
+  return new Date(`${date}T00:00:00`).toLocaleDateString("id-ID", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}
