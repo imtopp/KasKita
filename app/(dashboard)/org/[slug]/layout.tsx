@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { BottomNav } from "@/components/bottom-nav";
+import { DesktopNav } from "@/components/desktop-nav";
 import { Forbidden } from "@/components/forbidden";
 import { LogoutButton } from "@/components/logout-button";
 import { OrgSwitcher } from "@/components/org-switcher";
@@ -55,6 +56,7 @@ export default async function OrgLayout({
             <LogoutButton className="hidden h-9 px-3 text-sm md:inline-flex" />
           </div>
         </div>
+        <DesktopNav slug={slug} />
       </header>
       <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-4 md:py-6">
         {children}
