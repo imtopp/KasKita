@@ -170,5 +170,6 @@ Perubahan berikut dikerjakan setelah production live, sebagai maintenance/fitur 
 - [x] Fitur: indikator loading saat pindah menu — skeleton konten (`org/[slug]/loading.tsx` + `components/ui/skeleton.tsx`) dan spinner di link navigasi (`components/nav-link-icon.tsx` via `useLinkStatus`)
 - [x] Doc sync: README + dokumen arsitektur/PRD/coding standards/task breakdown di-update agar konsisten dengan kondisi sekarang
 - [x] Fitur: **tambah anggota existing** (US-5.4) — email yang sudah punya akun KasKita bisa langsung ditambahkan sebagai anggota (pilih role, tanpa password baru) lewat mode "Tambah anggota existing" di dialog "Daftarkan anggota", atau tombol konfirmasi saat daftar manual kena error "email sudah terdaftar"; API `/api/members` punya mode `existing` (cari user by email via service client, cek sudah-anggota → 409, lalu insert `organization_members`); pesan 409 undangan diarahkan ke fitur ini
+- [x] Fix US-1.3: **logout accessible dari mobile** — item "Keluar" (ikon + spinner saat proses) ditambahkan sebagai item ke-6 di `BottomNav` (sebelumnya tombol logout hanya muncul di `md:` ke atas, user mobile tidak bisa logout dari dashboard)
 
 Catatan: perubahan ini tidak mengubah skema DB / RLS policy / trigger.

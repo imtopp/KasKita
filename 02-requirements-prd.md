@@ -28,7 +28,7 @@ Acceptance criteria:
 
 ### US-1.3 Logout & session persistence
 Acceptance criteria:
-- [ ] Tombol logout di semua halaman dashboard (accessible dari mobile nav)
+- [x] Tombol logout di semua halaman dashboard (accessible dari mobile nav)
 - [ ] Session tetap login setelah refresh browser (pakai Supabase session handling)
 - [ ] Middleware redirect ke `/login` kalau akses route dashboard tanpa session valid
 
