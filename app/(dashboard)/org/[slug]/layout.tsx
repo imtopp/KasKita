@@ -6,7 +6,8 @@ import { DesktopNav } from "@/components/desktop-nav";
 import { Forbidden } from "@/components/forbidden";
 import { LogoutButton } from "@/components/logout-button";
 import { OrgSwitcher } from "@/components/org-switcher";
-import { ThemeToggle } from "@/components/theme-toggle";
+import { ThemePicker } from "@/components/theme-picker";
+import { ThemeSetter } from "@/components/theme-setter";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function OrgLayout({
@@ -48,8 +49,14 @@ export default async function OrgLayout({
     );
   }
 
+  const userTheme =
+    typeof user.user_metadata?.theme === "string"
+      ? user.user_metadata.theme
+      : undefined;
+
   return (
     <div className="flex min-h-dvh flex-col">
+      <ThemeSetter theme={userTheme} />
       <header className="sticky top-0 z-40 border-b bg-background">
         <div className="mx-auto flex h-14 w-full max-w-5xl items-center gap-2 px-4">
           <div className="flex min-w-0 items-center gap-2">
@@ -58,7 +65,7 @@ export default async function OrgLayout({
           </div>
           <div className="ml-auto flex items-center gap-2">
             <OrgSwitcher orgs={orgs ?? []} activeSlug={slug} />
-            <ThemeToggle />
+            <ThemePicker userTheme={userTheme} />
             <LogoutButton className="hidden h-9 px-3 text-sm md:inline-flex" />
           </div>
         </div>

@@ -3,7 +3,8 @@ import { redirect } from "next/navigation";
 import { BrandLogo } from "@/components/brand-logo";
 import { CreateOrganizationForm } from "@/components/create-organization-form";
 import { LogoutButton } from "@/components/logout-button";
-import { ThemeToggle } from "@/components/theme-toggle";
+import { ThemePicker } from "@/components/theme-picker";
+import { ThemeSetter } from "@/components/theme-setter";
 import {
   Card,
   CardContent,
@@ -30,10 +31,16 @@ export default async function OnboardingPage() {
 
   const hasOrgs = !!orgs && orgs.length > 0;
 
+  const userTheme =
+    typeof user.user_metadata?.theme === "string"
+      ? user.user_metadata.theme
+      : undefined;
+
   return (
     <main className="flex min-h-dvh flex-col items-center justify-center gap-5 px-4 py-8">
+      <ThemeSetter theme={userTheme} />
       <div className="fixed right-4 top-4 z-50">
-        <ThemeToggle />
+        <ThemePicker userTheme={userTheme} />
       </div>
       <div className="flex flex-col items-center gap-2">
         <BrandLogo size={72} />

@@ -36,7 +36,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${baloo.variable} h-full antialiased`}
     >
       <Script id="theme-init" strategy="beforeInteractive">
-        {`(function(){try{var t=localStorage.getItem("kaskita-theme");if(t!=="kawaii"){t="klasik";}document.documentElement.dataset.theme=t;}catch(e){document.documentElement.dataset.theme="klasik";}})();`}
+        {`(function(){try{var t=localStorage.getItem("kaskita-theme");var a=["klasik","kawaii","ocean","forest","sunrise"];if(a.indexOf(t)<0){t="klasik";}document.documentElement.dataset.theme=t;}catch(e){document.documentElement.dataset.theme="klasik";}})();`}
       </Script>
       <body className="min-h-full flex flex-col">
         {children}

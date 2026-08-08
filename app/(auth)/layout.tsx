@@ -1,5 +1,5 @@
 import { BrandLogo } from "@/components/brand-logo";
-import { ThemeToggle } from "@/components/theme-toggle";
+import { ThemePicker } from "@/components/theme-picker";
 
 export default function AuthLayout({
   children,
@@ -9,7 +9,7 @@ export default function AuthLayout({
   return (
     <div className="flex min-h-dvh flex-col items-center justify-center gap-5 px-4 py-8">
       <div className="fixed right-4 top-4 z-50">
-        <ThemeToggle />
+        <ThemePicker />
       </div>
       <div className="flex flex-col items-center gap-2">
         <BrandLogo size={72} />

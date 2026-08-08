@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation";
 
 import { InviteAcceptView } from "@/components/invite-accept-view";
+import { ThemePicker } from "@/components/theme-picker";
+import { ThemeSetter } from "@/components/theme-setter";
 import { createClient } from "@/lib/supabase/server";
 
 function first(value: string | string[] | undefined): string | undefined {
@@ -25,5 +27,18 @@ export default async function AcceptInvitePage({
     redirect(`/login?next=${encodeURIComponent(next)}`);
   }
 
-  return <InviteAcceptView token={token} />;
+  const userTheme =
+    typeof user.user_metadata?.theme === "string"
+      ? user.user_metadata.theme
+      : undefined;
+
+  return (
+    <>
+      <ThemeSetter theme={userTheme} />
+      <div className="fixed right-4 top-4 z-50">
+        <ThemePicker userTheme={userTheme} />
+      </div>
+      <InviteAcceptView token={token} />
+    </>
+  );
 }
