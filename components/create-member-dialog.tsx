@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
+import { Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -236,6 +237,9 @@ export function CreateMemberDialog({
               disabled={isSubmitting}
               className="h-11 text-base"
             >
+              {isSubmitting && (
+                <Loader2 className="size-4 animate-spin" aria-hidden />
+              )}
               {isSubmitting ? "Membuat..." : "Buat akun"}
             </Button>
           </DialogFooter>

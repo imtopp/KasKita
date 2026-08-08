@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
+import { Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -147,6 +148,9 @@ export function CreateOrganizationForm() {
         disabled={isSubmitting}
         className="h-11 w-full text-base"
       >
+        {isSubmitting && (
+          <Loader2 className="size-4 animate-spin" aria-hidden />
+        )}
         {isSubmitting ? "Membuat..." : "Buat organisasi"}
       </Button>
     </form>

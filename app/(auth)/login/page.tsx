@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import { useForm } from "react-hook-form";
+import { Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -127,6 +128,9 @@ function LoginForm() {
             disabled={isSubmitting}
             className="h-11 w-full text-base"
           >
+            {isSubmitting && (
+              <Loader2 className="size-4 animate-spin" aria-hidden />
+            )}
             {isSubmitting ? "Masuk..." : "Masuk"}
           </Button>
           <div className="flex flex-col gap-1 text-center text-sm text-muted-foreground">

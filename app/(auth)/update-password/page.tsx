@@ -3,6 +3,7 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import { useForm } from "react-hook-form";
+import { Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -134,6 +135,9 @@ function UpdatePasswordForm() {
             disabled={isSubmitting}
             className="h-11 w-full text-base"
           >
+            {isSubmitting && (
+              <Loader2 className="size-4 animate-spin" aria-hidden />
+            )}
             {isSubmitting ? "Menyimpan..." : "Simpan password baru"}
           </Button>
         </div>

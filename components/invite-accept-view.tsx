@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -131,7 +132,14 @@ export function InviteAcceptView({ token }: { token: string }) {
             disabled={accepting}
             className="h-11 w-full text-base"
           >
-            {accepting ? "Memproses..." : "Terima undangan"}
+            {accepting ? (
+              <>
+                <Loader2 className="size-4 animate-spin" aria-hidden />
+                Memproses...
+              </>
+            ) : (
+              "Terima undangan"
+            )}
           </Button>
         )}
         <Button

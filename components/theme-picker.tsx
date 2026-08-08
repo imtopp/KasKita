@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 
+import { Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 
@@ -34,10 +35,12 @@ export function ThemePicker({
   const [theme, setTheme] = useState<string>(
     userTheme ?? "klasik",
   );
+  const [saving, setSaving] = useState(false);
 
   async function apply(value: string | null) {
-    if (!value) return;
+    if (!value || saving) return;
     const next = THEMES.some((t) => t.id === value) ? value : "klasik";
+    setSaving(true);
     setTheme(next);
     document.documentElement.dataset.theme = next;
     try {
@@ -55,10 +58,11 @@ export function ThemePicker({
     } catch {
       /* simpan lokal tetap berlaku walau updateUser gagal */
     }
+    setSaving(false);
   }
 
   return (
-    <Select value={theme} onValueChange={apply}>
+    <Select value={theme} onValueChange={apply} disabled={saving}>
       <SelectTrigger
         aria-label="Pilih tema"
         className={cn(
@@ -66,6 +70,7 @@ export function ThemePicker({
           className,
         )}
       >
+        {saving && <Loader2 className="size-4 animate-spin" aria-hidden />}
         <SelectValue />
       </SelectTrigger>
       <SelectContent align="end">

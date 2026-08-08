@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -270,7 +271,14 @@ export function MembersView({
               disabled={busy}
               onClick={confirmDelete}
             >
-              {busy ? "Menghapus..." : "Hapus"}
+              {busy ? (
+                <>
+                  <Loader2 className="size-4 animate-spin" aria-hidden />
+                  Menghapus...
+                </>
+              ) : (
+                "Hapus"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
