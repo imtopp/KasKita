@@ -328,7 +328,7 @@ Next.js bisa dikonfigurasi jadi **Progressive Web App**:
 - [ ] Buat project Supabase, catat URL + anon key
 - [ ] Buat repo GitHub
 - [ ] Init Next.js project + Tailwind + shadcn/ui
-- [ ] Connect repo ke Vercel (auto-deploy dari branch `main`)
+- [x] Connect repo ke Vercel (auto-deploy dari branch `main`)
 - [ ] Jalankan SQL schema + RLS policies di Supabase SQL editor
 
 ### Fase 1 — Auth & Onboarding (2-3 hari)
@@ -361,7 +361,7 @@ Next.js bisa dikonfigurasi jadi **Progressive Web App**:
 ### Fase 6 — Testing & Deploy Production
 - [x] Test isolasi data antar organisasi (bikin 2 akun uji, pastikan tidak bisa saling lihat)
 - [x] Test role-based access (viewer tidak bisa edit, dll)
-- [ ] Deploy final ke Vercel production
+- [x] Deploy final ke Vercel production
 - [ ] Setup custom domain (opsional, kalau punya domain sendiri)
 
 **Estimasi total: ~2-3 minggu kerja santai (di luar jam kerja utama), atau ~1 minggu kalau fokus penuh.**

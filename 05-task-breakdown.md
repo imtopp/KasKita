@@ -148,8 +148,8 @@ Referensi dokumen lain:
 ## TASK 10 — Deploy Production
 **Dependency:** Task 9
 
-- [ ] Final deploy ke Vercel production
-- [ ] Smoke test semua fitur di production (bukan cuma local dev)
+- [x] Final deploy ke Vercel production
+- [x] Smoke test semua fitur di production (bukan cuma local dev)
 - [ ] (Opsional) setup custom domain kalau sudah tersedia
 
 **Definition of Done:** aplikasi bisa diakses publik, siap dipakai user sungguhan (kamu, istri, teman).
