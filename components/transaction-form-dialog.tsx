@@ -238,9 +238,9 @@ export function TransactionFormDialog({
           <div className="space-y-2">
             <Label>Kategori</Label>
             <Select
-              value={categoryId || "__empty__"}
+              value={categoryId}
               onValueChange={(value: string | null) => {
-                if (value && value !== "__empty__") {
+                if (value) {
                   setValue("category_id", value, { shouldValidate: true });
                 }
               }}
