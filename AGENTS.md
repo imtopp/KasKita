@@ -60,7 +60,7 @@ Mengubah skema DB yang sudah dijalankan, menambah dependency baru, mengubah RLS 
 - `app/(dashboard)/` — onboarding + `org/[slug]/` (dashboard, transactions, reports, members, settings)
 - `app/api/` — hanya untuk undangan/report/logic ber-privilege
 - `components/ui/` — shadcn; `lib/supabase/` — client.ts/server.ts/middleware.ts
-- `middleware.ts` — proteksi route/refresh session; `supabase/migrations/` — SQL migration
+- `proxy.ts` (Next 16: pengganti `middleware.ts`) — proteksi route/refresh session; `lib/supabase/middleware.ts` — helper `updateSession`; `supabase/migrations/` — SQL migration
 
 ## Dependencies lokal
 
