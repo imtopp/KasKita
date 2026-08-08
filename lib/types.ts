@@ -117,3 +117,34 @@ export type CategoryBreakdown = {
   type: "income" | "expense";
   total: number;
 };
+
+export const inviteMemberSchema = z.object({
+  email: z.string().trim().email("Format email tidak valid"),
+  role: z.enum(["treasurer", "viewer"]),
+});
+
+export const createMemberSchema = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(1, "Nama wajib diisi")
+    .max(60, "Nama maksimal 60 karakter"),
+  email: z.string().trim().email("Format email tidak valid"),
+  password: z
+    .string()
+    .min(8, "Password minimal 8 karakter")
+    .max(72, "Password maksimal 72 karakter"),
+  role: z.enum(["treasurer", "viewer"]),
+});
+
+export type InviteMemberForm = z.infer<typeof inviteMemberSchema>;
+export type CreateMemberForm = z.infer<typeof createMemberSchema>;
+
+export type MemberRow = {
+  id: string;
+  user_id: string;
+  role: "owner" | "treasurer" | "viewer";
+  email: string;
+  name: string | null;
+  source: "email" | "manual";
+};

@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useState } from "react";
 import { useForm } from "react-hook-form";
 
 import { Button } from "@/components/ui/button";
@@ -21,7 +21,16 @@ import { createClient } from "@/lib/supabase/client";
 import { loginSchema, type LoginForm } from "@/lib/types";
 
 export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginForm />
+    </Suspense>
+  );
+}
+
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const supabase = createClient();
   const [serverError, setServerError] = useState<string | null>(null);
 
@@ -31,6 +40,13 @@ export default function LoginPage() {
     setError,
     formState: { errors, isSubmitting },
   } = useForm<LoginForm>();
+
+  function safeNext(value: string | null): string {
+    if (value && value.startsWith("/") && !value.startsWith("//")) {
+      return value;
+    }
+    return "/";
+  }
 
   const onSubmit = handleSubmit(async (values) => {
     setServerError(null);
@@ -55,7 +71,8 @@ export default function LoginPage() {
       return;
     }
 
-    router.push("/");
+    const next = safeNext(searchParams.get("next"));
+    router.push(next);
     router.refresh();
   });
 

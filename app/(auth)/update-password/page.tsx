@@ -1,7 +1,7 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useState } from "react";
 import { useForm } from "react-hook-form";
 
 import { Button } from "@/components/ui/button";
@@ -21,7 +21,17 @@ import {
 } from "@/lib/types";
 
 export default function UpdatePasswordPage() {
+  return (
+    <Suspense fallback={null}>
+      <UpdatePasswordForm />
+    </Suspense>
+  );
+}
+
+function UpdatePasswordForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const forced = searchParams.get("forced") === "1";
   const supabase = createClient();
   const [serverError, setServerError] = useState<string | null>(null);
 
@@ -54,6 +64,16 @@ export default function UpdatePasswordPage() {
       return;
     }
 
+    if (forced) {
+      const { error: flagError } = await supabase.auth.updateUser({
+        data: { must_change_password: false },
+      });
+      if (flagError) {
+        setServerError("Gagal mengubah password. Coba lagi.");
+        return;
+      }
+    }
+
     router.push("/");
     router.refresh();
   });
@@ -63,7 +83,9 @@ export default function UpdatePasswordPage() {
       <CardHeader>
         <CardTitle>Atur password baru</CardTitle>
         <CardDescription>
-          Masukkan password baru untuk akun kamu.
+          {forced
+            ? "Kamu memakai password sementara. Buat password baru sebelum lanjut memakai KasKita."
+            : "Masukkan password baru untuk akun kamu."}
         </CardDescription>
       </CardHeader>
       <form onSubmit={onSubmit} noValidate>

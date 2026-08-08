@@ -23,6 +23,10 @@ export default async function OrgLayout({
     redirect("/login");
   }
 
+  if (user.user_metadata?.must_change_password) {
+    redirect("/update-password?forced=1");
+  }
+
   const { data: orgs } = await supabase
     .from("organizations")
     .select("id, name, slug")

@@ -1,0 +1,207 @@
+import { NextRequest, NextResponse } from "next/server";
+
+import { createServiceClient, getRequester, jsonError } from "@/lib/api-helpers";
+import { createMemberSchema } from "@/lib/types";
+
+const ROLE_VALUES = ["owner", "treasurer", "viewer"] as const;
+
+export async function GET(request: NextRequest) {
+  const orgId = request.nextUrl.searchParams.get("orgId");
+  if (!orgId) return jsonError("Parameter orgId wajib.", 400);
+
+  const auth = await getRequester(orgId);
+  if (!auth.ok) return auth.response;
+
+  const admin = createServiceClient();
+  const { data: members } = await admin
+    .from("organization_members")
+    .select("id, organization_id, user_id, role, invited_by, joined_at")
+    .eq("organization_id", orgId);
+
+  const { data: invitations } = await admin
+    .from("invitations")
+    .select("email")
+    .eq("organization_id", orgId);
+  const invitedEmails = new Set(
+    (invitations ?? []).map((invitation) => invitation.email.toLowerCase()),
+  );
+
+  const result = [];
+  for (const member of members ?? []) {
+    const { data } = await admin.auth.admin.getUserById(member.user_id);
+    if (!data?.user) continue;
+    const user = data.user;
+    const metadata = user.user_metadata ?? {};
+    const name =
+      typeof metadata.full_name === "string" && metadata.full_name.trim()
+        ? metadata.full_name
+        : null;
+    result.push({
+      id: member.id,
+      user_id: member.user_id,
+      role: member.role,
+      email: user.email ?? "?",
+      name,
+      source: invitedEmails.has((user.email ?? "").toLowerCase())
+        ? "email"
+        : "manual",
+    });
+  }
+
+  return NextResponse.json({ members: result });
+}
+
+export async function POST(request: NextRequest) {
+  let body: Record<string, unknown>;
+  try {
+    body = await request.json();
+  } catch {
+    return jsonError("Permintaan tidak valid.", 400);
+  }
+
+  const orgId = typeof body.orgId === "string" ? body.orgId : "";
+  const auth = await getRequester(orgId);
+  if (!auth.ok) return auth.response;
+
+  const parsed = createMemberSchema.safeParse(body);
+  if (!parsed.success) {
+    return jsonError(parsed.error.issues[0].message, 400);
+  }
+
+  const admin = createServiceClient();
+  const { data: created, error } = await admin.auth.admin.createUser({
+    email: parsed.data.email,
+    password: parsed.data.password,
+    email_confirm: true,
+    user_metadata: {
+      full_name: parsed.data.name,
+      must_change_password: true,
+    },
+  });
+  if (error) {
+    if (/already registered|already been registered/i.test(error.message)) {
+      return jsonError("Email ini sudah terdaftar sebagai akun KasKita.", 409);
+    }
+    return jsonError("Gagal membuat akun. Coba lagi.", 500);
+  }
+
+  const { error: memberError } = await admin.from("organization_members").insert(
+    {
+      organization_id: orgId,
+      user_id: created.user.id,
+      role: parsed.data.role,
+      invited_by: auth.user.id,
+    },
+  );
+  if (memberError) {
+    await admin.auth.admin.deleteUser(created.user.id).catch(() => {});
+    return jsonError("Gagal menambahkan anggota. Coba lagi.", 500);
+  }
+
+  return NextResponse.json({
+    success: true,
+    name: parsed.data.name,
+    email: parsed.data.email,
+    password: parsed.data.password,
+  });
+}
+
+export async function PATCH(request: NextRequest) {
+  let body: Record<string, unknown>;
+  try {
+    body = await request.json();
+  } catch {
+    return jsonError("Permintaan tidak valid.", 400);
+  }
+
+  const orgId = typeof body.orgId === "string" ? body.orgId : "";
+  const userId = typeof body.userId === "string" ? body.userId : "";
+  const role = body.role as (typeof ROLE_VALUES)[number];
+
+  const auth = await getRequester(orgId);
+  if (!auth.ok) return auth.response;
+  if (!userId || !ROLE_VALUES.includes(role)) {
+    return jsonError("Data tidak valid.", 400);
+  }
+
+  const admin = createServiceClient();
+  const { data: member } = await admin
+    .from("organization_members")
+    .select("role")
+    .eq("organization_id", orgId)
+    .eq("user_id", userId)
+    .single();
+  if (!member) return jsonError("Anggota tidak ditemukan.", 404);
+
+  if (userId === auth.user.id && role !== "owner") {
+    const { count } = await admin
+      .from("organization_members")
+      .select("id", { count: "exact", head: true })
+      .eq("organization_id", orgId)
+      .eq("role", "owner");
+    if ((count ?? 0) <= 1) {
+      return jsonError(
+        "Tidak bisa melepas peran owner terakhir dari dirimu sendiri.",
+        400,
+      );
+    }
+  }
+
+  const { error } = await admin
+    .from("organization_members")
+    .update({ role })
+    .eq("organization_id", orgId)
+    .eq("user_id", userId);
+  if (error) return jsonError("Gagal mengubah peran anggota. Coba lagi.", 500);
+
+  return NextResponse.json({ success: true });
+}
+
+export async function DELETE(request: NextRequest) {
+  let body: Record<string, unknown>;
+  try {
+    body = await request.json();
+  } catch {
+    return jsonError("Permintaan tidak valid.", 400);
+  }
+
+  const orgId = typeof body.orgId === "string" ? body.orgId : "";
+  const userId = typeof body.userId === "string" ? body.userId : "";
+
+  const auth = await getRequester(orgId);
+  if (!auth.ok) return auth.response;
+  if (!userId) return jsonError("Data tidak valid.", 400);
+
+  if (userId === auth.user.id) {
+    return jsonError("Tidak bisa menghapus dirimu sendiri dari organisasi.", 400);
+  }
+
+  const admin = createServiceClient();
+  const { data: member } = await admin
+    .from("organization_members")
+    .select("role")
+    .eq("organization_id", orgId)
+    .eq("user_id", userId)
+    .single();
+  if (!member) return jsonError("Anggota tidak ditemukan.", 404);
+
+  if (member.role === "owner") {
+    const { count } = await admin
+      .from("organization_members")
+      .select("id", { count: "exact", head: true })
+      .eq("organization_id", orgId)
+      .eq("role", "owner");
+    if ((count ?? 0) <= 1) {
+      return jsonError("Tidak bisa menghapus owner terakhir.", 400);
+    }
+  }
+
+  const { error } = await admin
+    .from("organization_members")
+    .delete()
+    .eq("organization_id", orgId)
+    .eq("user_id", userId);
+  if (error) return jsonError("Gagal menghapus anggota. Coba lagi.", 500);
+
+  return NextResponse.json({ success: true });
+}
