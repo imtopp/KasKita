@@ -142,7 +142,8 @@ Acceptance criteria:
 - [ ] Setelah user dibuat, langsung insert row ke `organization_members` dengan role yang dipilih (tanpa lewat flow invitation/token)
 - [ ] Password sementara ditampilkan SEKALI ke owner setelah submit sukses (di layar, bukan dikirim email), dengan pesan jelas untuk segera disampaikan ke orangnya lewat kanal aman
 - [ ] User yang baru dibuat, saat pertama kali login, diarahkan ke halaman "ganti password" sebelum bisa akses dashboard (paksa ganti dari password sementara)
-- [ ] Validasi: email belum terdaftar sebelumnya di sistem (kalau sudah ada, arahkan owner untuk pakai fitur "tambah anggota existing" alih-alih daftar baru)
+- [x] Validasi: email belum terdaftar sebelumnya di sistem (kalau sudah ada, arahkan owner untuk pakai fitur "tambah anggota existing" alih-alih daftar baru)
+- [x] Fitur "tambah anggota existing": owner bisa menambahkan email yang sudah punya akun KasKita langsung sebagai anggota (pilih role, tanpa password baru) — diakses lewat mode "Tambah anggota existing" di dialog "Daftarkan anggota" atau tombol konfirmasi saat email sudah terdaftar
 
 ### US-5.3 Kelola anggota existing
 Acceptance criteria:

@@ -18,7 +18,7 @@ function mapInviteError(error: {
   if (/already registered|already been registered/i.test(error.message)) {
     return {
       message:
-        "Email ini sudah terdaftar sebagai akun. Gunakan email lain atau daftarkan lewat 'Daftarkan anggota'.",
+        "Email ini sudah terdaftar sebagai akun. Tambahkan lewat 'Tambah anggota existing'.",
       status: 409,
     };
   }

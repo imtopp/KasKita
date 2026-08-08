@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { createServiceClient, getRequester, jsonError } from "@/lib/api-helpers";
-import { createMemberSchema } from "@/lib/types";
+import {
+  addExistingMemberSchema,
+  createMemberSchema,
+} from "@/lib/types";
 
 const ROLE_VALUES = ["owner", "treasurer", "viewer"] as const;
 
@@ -63,12 +66,61 @@ export async function POST(request: NextRequest) {
   const auth = await getRequester(orgId);
   if (!auth.ok) return auth.response;
 
+  const admin = createServiceClient();
+
+  if (body.existing === true) {
+    const parsed = addExistingMemberSchema.safeParse(body);
+    if (!parsed.success) {
+      return jsonError(parsed.error.issues[0].message, 400);
+    }
+
+    const email = parsed.data.email.toLowerCase();
+    const { data: existingUsers } = await admin
+      .from("auth.users")
+      .select("id")
+      .eq("email", email);
+    const existingUserId = existingUsers?.[0]?.id;
+    if (!existingUserId) {
+      return jsonError(
+        "Tidak ditemukan akun KasKita dengan email ini. Cek kembali emailnya.",
+        404,
+      );
+    }
+
+    const { data: existingMember } = await admin
+      .from("organization_members")
+      .select("id")
+      .eq("organization_id", orgId)
+      .eq("user_id", existingUserId)
+      .single();
+    if (existingMember) {
+      return jsonError("Email ini sudah menjadi anggota organisasi ini.", 409);
+    }
+
+    const { error: memberError } = await admin
+      .from("organization_members")
+      .insert({
+        organization_id: orgId,
+        user_id: existingUserId,
+        role: parsed.data.role,
+        invited_by: auth.user.id,
+      });
+    if (memberError) {
+      return jsonError("Gagal menambahkan anggota. Coba lagi.", 500);
+    }
+
+    return NextResponse.json({
+      success: true,
+      existing: true,
+      email: parsed.data.email,
+    });
+  }
+
   const parsed = createMemberSchema.safeParse(body);
   if (!parsed.success) {
     return jsonError(parsed.error.issues[0].message, 400);
   }
 
-  const admin = createServiceClient();
   const { data: created, error } = await admin.auth.admin.createUser({
     email: parsed.data.email,
     password: parsed.data.password,
@@ -80,7 +132,14 @@ export async function POST(request: NextRequest) {
   });
   if (error) {
     if (/already registered|already been registered/i.test(error.message)) {
-      return jsonError("Email ini sudah terdaftar sebagai akun KasKita.", 409);
+      return NextResponse.json(
+        {
+          error:
+            "Email ini sudah terdaftar sebagai akun KasKita. Tambahkan sebagai anggota existing.",
+          emailExists: true,
+        },
+        { status: 409 },
+      );
     }
     return jsonError("Gagal membuat akun. Coba lagi.", 500);
   }

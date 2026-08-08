@@ -137,8 +137,14 @@ export const createMemberSchema = z.object({
   role: z.enum(["treasurer", "viewer"]),
 });
 
+export const addExistingMemberSchema = z.object({
+  email: z.string().trim().email("Format email tidak valid"),
+  role: z.enum(["treasurer", "viewer"]),
+});
+
 export type InviteMemberForm = z.infer<typeof inviteMemberSchema>;
 export type CreateMemberForm = z.infer<typeof createMemberSchema>;
+export type AddExistingMemberForm = z.infer<typeof addExistingMemberSchema>;
 
 export type MemberRow = {
   id: string;

@@ -24,6 +24,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  addExistingMemberSchema,
   createMemberSchema,
   type CreateMemberForm,
 } from "@/lib/types";
@@ -38,7 +39,8 @@ function randomPassword(): string {
 type Created = {
   name: string;
   email: string;
-  password: string;
+  password?: string;
+  existing?: boolean;
 };
 
 export function CreateMemberDialog({
@@ -54,6 +56,8 @@ export function CreateMemberDialog({
 }) {
   const [serverError, setServerError] = useState<string | null>(null);
   const [created, setCreated] = useState<Created | null>(null);
+  const [mode, setMode] = useState<"create" | "existing">("create");
+  const [emailExists, setEmailExists] = useState(false);
 
   const {
     register,
@@ -71,12 +75,55 @@ export function CreateMemberDialog({
     if (open) {
       setServerError(null);
       setCreated(null);
+      setEmailExists(false);
+      setMode("create");
       reset({ name: "", email: "", password: "", role: "viewer" });
     }
   }, [open, reset]);
 
   const onSubmit = handleSubmit(async (values) => {
     setServerError(null);
+    setEmailExists(false);
+
+    if (mode === "existing") {
+      const parsed = addExistingMemberSchema.safeParse({
+        email: values.email,
+        role: values.role,
+      });
+      if (!parsed.success) {
+        for (const issue of parsed.error.issues) {
+          setError(issue.path[0] as "email" | "role", {
+            message: issue.message,
+          });
+        }
+        return;
+      }
+
+      const res = await fetch("/api/members", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          orgId,
+          existing: true,
+          email: parsed.data.email,
+          role: parsed.data.role,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setServerError(data.error ?? "Gagal menambahkan anggota.");
+        return;
+      }
+
+      setCreated({
+        name: parsed.data.email,
+        email: parsed.data.email,
+        existing: true,
+      });
+      onCreated();
+      return;
+    }
+
     const parsed = createMemberSchema.safeParse(values);
     if (!parsed.success) {
       for (const issue of parsed.error.issues) {
@@ -95,6 +142,9 @@ export function CreateMemberDialog({
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
+      if (res.status === 409 && data.emailExists) {
+        setEmailExists(true);
+      }
       setServerError(data.error ?? "Gagal membuat akun anggota.");
       return;
     }
@@ -108,19 +158,34 @@ export function CreateMemberDialog({
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Akun anggota dibuat</DialogTitle>
+            <DialogTitle>
+              {created.existing ? "Anggota ditambahkan" : "Akun anggota dibuat"}
+            </DialogTitle>
             <DialogDescription>
-              Akun untuk {created.name} ({created.email}) berhasil dibuat.
-              Sampaikan password sementara berikut dengan aman (chat/WA tatap
-              muka), jangan lewat email.
+              {created.existing ? (
+                <>
+                  {created.email} sudah ditambahkan sebagai anggota organisasi
+                  ini. Dia bisa langsung login dengan akunnya yang sudah ada.
+                </>
+              ) : (
+                <>
+                  Akun untuk {created.name} ({created.email}) berhasil dibuat.
+                  Sampaikan password sementara berikut dengan aman (chat/WA tatap
+                  muka), jangan lewat email.
+                </>
+              )}
             </DialogDescription>
           </DialogHeader>
-          <div className="rounded-xl border p-4 text-center">
-            <p className="text-sm text-muted-foreground">Password sementara</p>
-            <p className="mt-1 break-all font-mono text-lg font-bold">
-              {created.password}
-            </p>
-          </div>
+          {!created.existing && (
+            <div className="rounded-xl border p-4 text-center">
+              <p className="text-sm text-muted-foreground">
+                Password sementara
+              </p>
+              <p className="mt-1 break-all font-mono text-lg font-bold">
+                {created.password}
+              </p>
+            </div>
+          )}
           <DialogFooter>
             <DialogClose render={<Button type="button" variant="outline" className="h-11" />}>
               Tutup
@@ -135,10 +200,15 @@ export function CreateMemberDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Daftarkan anggota manual</DialogTitle>
+          <DialogTitle>
+            {mode === "existing"
+              ? "Tambah anggota existing"
+              : "Daftarkan anggota manual"}
+          </DialogTitle>
           <DialogDescription>
-            Buat akun langsung tanpa mengirim email. Anggota akan diminta ganti
-            password saat login pertama.
+            {mode === "existing"
+              ? "Email ini sudah punya akun KasKita. Tambahkan langsung sebagai anggota organisasi ini."
+              : "Buat akun langsung tanpa mengirim email. Anggota akan diminta ganti password saat login pertama."}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={onSubmit} noValidate className="space-y-4">
@@ -147,20 +217,38 @@ export function CreateMemberDialog({
               {serverError}
             </div>
           )}
-          <div className="space-y-2">
-            <Label htmlFor="memName">Nama lengkap</Label>
-            <Input
-              id="memName"
-              type="text"
-              placeholder="Contoh: Budi Santoso"
-              className="h-11"
-              aria-invalid={!!errors.name}
-              {...register("name")}
-            />
-            {errors.name && (
-              <p className="text-sm text-destructive">{errors.name.message}</p>
-            )}
-          </div>
+          {emailExists && (
+            <Button
+              type="button"
+              variant="outline"
+              className="h-11 w-full text-base"
+              onClick={() => {
+                setMode("existing");
+                setEmailExists(false);
+                setServerError(null);
+              }}
+            >
+              Email sudah terdaftar — tambahkan sebagai anggota
+            </Button>
+          )}
+          {mode === "create" && (
+            <div className="space-y-2">
+              <Label htmlFor="memName">Nama lengkap</Label>
+              <Input
+                id="memName"
+                type="text"
+                placeholder="Contoh: Budi Santoso"
+                className="h-11"
+                aria-invalid={!!errors.name}
+                {...register("name")}
+              />
+              {errors.name && (
+                <p className="text-sm text-destructive">
+                  {errors.name.message}
+                </p>
+              )}
+            </div>
+          )}
           <div className="space-y-2">
             <Label htmlFor="memEmail">Email</Label>
             <Input
@@ -173,44 +261,44 @@ export function CreateMemberDialog({
               {...register("email")}
             />
             {errors.email && (
-              <p className="text-sm text-destructive">
-                {errors.email.message}
-              </p>
+              <p className="text-sm text-destructive">{errors.email.message}</p>
             )}
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="memPassword">Password sementara</Label>
-            <div className="flex gap-2">
-              <Input
-                id="memPassword"
-                type="text"
-                className="h-11 font-mono"
-                aria-invalid={!!errors.password}
-                {...register("password")}
-              />
-              <Button
-                type="button"
-                variant="outline"
-                className="h-11 shrink-0 px-4"
-                onClick={() =>
-                  setValue("password", randomPassword(), {
-                    shouldValidate: true,
-                  })
-                }
-              >
-                Acak
-              </Button>
+          {mode === "create" && (
+            <div className="space-y-2">
+              <Label htmlFor="memPassword">Password sementara</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="memPassword"
+                  type="text"
+                  className="h-11 font-mono"
+                  aria-invalid={!!errors.password}
+                  {...register("password")}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-11 shrink-0 px-4"
+                  onClick={() =>
+                    setValue("password", randomPassword(), {
+                      shouldValidate: true,
+                    })
+                  }
+                >
+                  Acak
+                </Button>
+              </div>
+              {errors.password ? (
+                <p className="text-sm text-destructive">
+                  {errors.password.message}
+                </p>
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  Minimal 8 karakter.
+                </p>
+              )}
             </div>
-            {errors.password ? (
-              <p className="text-sm text-destructive">
-                {errors.password.message}
-              </p>
-            ) : (
-              <p className="text-xs text-muted-foreground">
-                Minimal 8 karakter.
-              </p>
-            )}
-          </div>
+          )}
           <div className="space-y-2">
             <Label>Peran</Label>
             <Select
@@ -228,6 +316,20 @@ export function CreateMemberDialog({
               </SelectContent>
             </Select>
           </div>
+          {mode === "create" && (
+            <Button
+              type="button"
+              variant="link"
+              className="h-auto p-0 text-sm text-primary"
+              onClick={() => {
+                setMode("existing");
+                setServerError(null);
+                setEmailExists(false);
+              }}
+            >
+              Email sudah punya akun? Tambahkan sebagai anggota existing
+            </Button>
+          )}
           <DialogFooter>
             <DialogClose render={<Button type="button" variant="outline" className="h-11" />}>
               Batal
@@ -240,7 +342,13 @@ export function CreateMemberDialog({
               {isSubmitting && (
                 <Loader2 className="size-4 animate-spin" aria-hidden />
               )}
-              {isSubmitting ? "Membuat..." : "Buat akun"}
+              {isSubmitting
+                ? mode === "existing"
+                  ? "Menambahkan..."
+                  : "Membuat..."
+                : mode === "existing"
+                  ? "Tambahkan"
+                  : "Buat akun"}
             </Button>
           </DialogFooter>
         </form>
