@@ -72,11 +72,12 @@ Artinya:
 
 ### Role per organisasi
 Setiap user yang jadi anggota organisasi punya salah satu role:
-- **owner** — pembuat organisasi, akses penuh, bisa hapus organisasi, kelola anggota
+- **owner** — pembuat organisasi, akses penuh, bisa hapus organisasi, kelola anggota, **satu-satunya yang bisa membuat organisasi baru**
+- **co-owner** — kuasa seperti owner di organisasinya (kelola anggota/transaksi/kategori, akses Pengaturan), tapi **tidak bisa membuat organisasi baru** dan **tidak bisa menghapus organisasi** (nilai DB `co_owner`)
 - **treasurer** (bendahara) — bisa catat/edit/hapus transaksi, lihat laporan
 - **viewer** — hanya bisa lihat laporan & riwayat, tidak bisa edit apa-apa
 
-Hak akses menu di nav (mobile `BottomNav` & desktop `DesktopNav`) mengikuti role: menu **Anggota** dan **Pengaturan** HANYA tampil untuk owner (tidak tampil untuk treasurer/viewer); halaman `members` dan `settings` juga memblokir non-owner di server (`Forbidden`).
+Hak akses menu di nav (mobile `BottomNav` & desktop `DesktopNav`) mengikuti role: menu **Anggota** dan **Pengaturan** HANYA tampil untuk owner/co-owner (tidak tampil untuk treasurer/viewer); halaman `members` dan `settings` juga memblokir non-owner/co-owner di server (`Forbidden`). Pembuatan organisasi dibatasi: hanya user berperan owner (atau user baru yang belum tergabung di organisasi mana pun) yang bisa membuat organisasi — di-enforce di RLS (`can_create_organization()`) dan di UI (org switcher + onboarding).
 
 ---
 
@@ -106,7 +107,7 @@ create table organization_members (
   id uuid primary key default gen_random_uuid(),
   organization_id uuid references organizations(id) on delete cascade not null,
   user_id uuid references auth.users(id) on delete cascade not null,
-  role text not null check (role in ('owner', 'treasurer', 'viewer')),
+  role text not null check (role in ('owner', 'treasurer', 'viewer')),  -- + 'co_owner' via migration 202608090001
   invited_by uuid references auth.users(id),
   joined_at timestamptz default now(),
   unique (organization_id, user_id)
@@ -196,18 +197,22 @@ $$ language sql security definer stable;
 create policy "select_own_orgs" on organizations
   for select using (is_org_member(id));
 
+-- insert_org: hanya owner (atau user yang belum tergabung di org mana pun) —
+-- via migration 202608090001: created_by = auth.uid() AND can_create_organization()
 create policy "insert_org" on organizations
   for insert with check (created_by = auth.uid());
 
-create policy "update_org_owner_only" on organizations
-  for update using (get_org_role(id) = 'owner');
+-- update: owner/co_owner (policy diubah jadi "update_org_manage"); delete: owner only (via migration 202608090001)
+create policy "update_org_manage" on organizations
+  for update using (get_org_role(id) in ('owner', 'co_owner'));
 
 -- ORGANIZATION_MEMBERS: hanya bisa lihat anggota di org yang sama
 create policy "select_members_same_org" on organization_members
   for select using (is_org_member(organization_id));
 
-create policy "insert_member_owner_only" on organization_members
-  for insert with check (get_org_role(organization_id) = 'owner');
+-- insert/update/delete member: owner/co_owner (policies "insert_member_manage" dkk. via migration 202608090001)
+create policy "insert_member_manage" on organization_members
+  for insert with check (get_org_role(organization_id) in ('owner', 'co_owner'));
 
 -- CATEGORIES: semua anggota bisa lihat, owner/treasurer bisa edit
 create policy "select_categories" on categories
@@ -435,6 +440,6 @@ Untuk skala pemakaian: beberapa organisasi kecil (RT, arisan, komunitas), total 
 
 Dokumen ini awalnya dipakai sebagai acuan build dari nol; saat ini **seluruh MVP sudah selesai dan live di production** (Vercel). Item yang belum dikerjakan dan sengaja dibiarkan (opsional): export laporan PDF/Excel, grafik tren (Recharts), upload bukti foto, custom domain, approval flow, notifikasi otomatis, multi-currency.
 
-Perubahan yang sudah disetujui user setelah MVP tercatat di section 1 (PWA, tema per-akun, DesktopNav, logo brand). Skema & RLS yang benar-benar berjalan ada di `03-database-migration.sql` — file itu sudah dijalankan dan **tidak boleh diedit**; perubahan skema berikutnya memakai migration file baru.
+Perubahan yang sudah disetujui user setelah MVP tercatat di section 1 (PWA, tema per-akun, DesktopNav, logo brand) dan di PRD "Fitur Tambahan" (kelola akun anggota, export PDF untuk semua role, role **co-owner** + pembatasan buat organisasi, perbaikan layout mobile). Skema & RLS yang benar-benar berjalan ada di `03-database-migration.sql` — file itu sudah dijalankan dan **tidak boleh diedit**; perubahan skema berikutnya memakai migration file baru (contoh: `supabase/migrations/202608090001_co_owner_role_and_org_creation.sql` untuk role `co_owner` + pembatasan `insert_org`).
 
 > Estimasi pengerjaan awal: ~2-3 minggu kerja santai / ~1 minggu fokus penuh.

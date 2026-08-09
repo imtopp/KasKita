@@ -149,7 +149,7 @@ export function TransactionsView({
       </div>
 
       <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
-        <div className="space-y-1.5">
+        <div className="min-w-0 space-y-1.5">
           <Label className="text-xs font-medium text-muted-foreground">
             Jenis
           </Label>
@@ -169,7 +169,7 @@ export function TransactionsView({
             </SelectContent>
           </Select>
         </div>
-        <div className="space-y-1.5">
+        <div className="min-w-0 space-y-1.5">
           <Label className="text-xs font-medium text-muted-foreground">
             Kategori
           </Label>
@@ -192,7 +192,7 @@ export function TransactionsView({
             </SelectContent>
           </Select>
         </div>
-        <div className="space-y-1.5">
+        <div className="min-w-0 space-y-1.5">
           <Label
             htmlFor="filterFrom"
             className="text-xs font-medium text-muted-foreground"
@@ -205,7 +205,7 @@ export function TransactionsView({
             onChange={(e) => setFilter("from", e.target.value || null)}
           />
         </div>
-        <div className="space-y-1.5">
+        <div className="min-w-0 space-y-1.5">
           <Label
             htmlFor="filterTo"
             className="text-xs font-medium text-muted-foreground"

@@ -49,6 +49,14 @@ export default async function OrgLayout({
     );
   }
 
+  const { data: memberships } = await supabase
+    .from("organization_members")
+    .select("role")
+    .eq("user_id", user.id);
+  const canCreateOrg =
+    (orgs?.length ?? 0) === 0 ||
+    (memberships ?? []).some((membership) => membership.role === "owner");
+
   const userTheme =
     typeof user.user_metadata?.theme === "string"
       ? user.user_metadata.theme
@@ -63,7 +71,7 @@ export default async function OrgLayout({
   const role: string | null = membership?.role ?? null;
 
   return (
-    <div className="flex min-h-dvh flex-col">
+    <div className="flex min-h-dvh flex-col overflow-x-clip">
       <ThemeSetter theme={userTheme} />
       <header className="sticky top-0 z-40 border-b bg-background">
         <div className="mx-auto flex h-14 w-full max-w-5xl items-center gap-2 px-4">
@@ -72,7 +80,11 @@ export default async function OrgLayout({
             <p className="truncate text-sm font-bold">{activeOrg.name}</p>
           </div>
           <div className="ml-auto flex items-center gap-2">
-            <OrgSwitcher orgs={orgs ?? []} activeSlug={slug} />
+            <OrgSwitcher
+              orgs={orgs ?? []}
+              activeSlug={slug}
+              canCreateOrg={canCreateOrg}
+            />
             <ThemePicker userTheme={userTheme} />
             <LogoutButton className="hidden h-9 w-auto shrink-0 px-3 text-sm md:inline-flex" />
           </div>

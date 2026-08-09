@@ -89,6 +89,10 @@ export function CreateOrganizationForm() {
         setError("slug", {
           message: "Slug sudah dipakai. Coba yang lain.",
         });
+      } else if (
+        /row-level security|permission denied/i.test(error.message)
+      ) {
+        setServerError("Hanya owner yang bisa membuat organisasi baru.");
       } else {
         setServerError("Gagal membuat organisasi. Coba lagi.");
       }

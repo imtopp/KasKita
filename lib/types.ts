@@ -166,7 +166,7 @@ export type ChangeMemberEmailForm = z.infer<typeof changeMemberEmailSchema>;
 export type MemberRow = {
   id: string;
   user_id: string;
-  role: "owner" | "treasurer" | "viewer";
+  role: "owner" | "co_owner" | "treasurer" | "viewer";
   email: string;
   name: string | null;
   source: "email" | "manual";

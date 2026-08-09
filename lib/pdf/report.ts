@@ -113,7 +113,7 @@ export async function generateReportPdf(params: {
     content: [
       {
         columns: [
-          { image: "logo", width: 64, height: 64, margin: [0, 0, 12, 0] },
+          { image: "logo", width: 64, height: 64, margin: [0, 8, 16, 0] },
           {
             stack: [
               { text: "Laporan Kas", style: "title" },

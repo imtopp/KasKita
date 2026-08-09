@@ -11,12 +11,13 @@ function DateInput({
 }: React.ComponentProps<"input"> & { emptyHint?: string }) {
   const isEmpty = !value;
   return (
-    <div className="relative">
+    <div className="relative min-w-0">
       <Input
         type="date"
         className={cn(
           "h-11",
-          isEmpty && "[&::-webkit-datetime-edit]:text-transparent",
+          isEmpty &&
+            "[&::-webkit-datetime-edit]:text-transparent [&::-webkit-datetime-edit-fields-wrapper]:text-transparent",
           className,
         )}
         value={value}
@@ -25,7 +26,7 @@ function DateInput({
       {isEmpty && (
         <span
           aria-hidden
-          className="pointer-events-none absolute inset-y-0 left-4 flex items-center text-sm text-muted-foreground"
+          className="pointer-events-none absolute inset-y-0 left-4 flex items-center text-sm text-muted-foreground supports-[-webkit-touch-callout:none]:hidden"
         >
           {emptyHint}
         </span>

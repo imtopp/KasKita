@@ -28,10 +28,6 @@ export default async function ReportsPage({
   const sp = await searchParams;
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
   const { data: org } = await supabase
     .from("organizations")
     .select("id")
@@ -40,15 +36,6 @@ export default async function ReportsPage({
   if (!org) {
     notFound();
   }
-
-  const { data: membership } = await supabase
-    .from("organization_members")
-    .select("role")
-    .eq("organization_id", org.id)
-    .eq("user_id", user?.id ?? "")
-    .single();
-  const canManage =
-    membership?.role === "owner" || membership?.role === "treasurer";
 
   const now = new Date();
   const parsedMonth = parseInt(first(sp.month) ?? "", 10);
@@ -88,7 +75,6 @@ export default async function ReportsPage({
       year={year}
       totals={totals}
       breakdown={breakdown}
-      canManage={canManage}
     />
   );
 }

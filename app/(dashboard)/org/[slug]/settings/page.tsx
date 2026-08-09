@@ -34,7 +34,10 @@ export default async function SettingsPage({
     .eq("user_id", user.id)
     .single();
 
-  if (membership?.role !== "owner") {
+  if (
+    membership?.role !== "owner" &&
+    membership?.role !== "co_owner"
+  ) {
     return <Forbidden fallbackHref={`/org/${slug}/dashboard`} />;
   }
 

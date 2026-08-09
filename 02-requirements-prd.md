@@ -63,6 +63,7 @@ Acceptance criteria:
 Acceptance criteria:
 - [x] Ada tombol "Buat organisasi baru" di org switcher
 - [x] Flow sama seperti US-2.1
+- [x] **Hanya owner yang bisa membuat organisasi baru** — tombol "Buat organisasi baru" di org switcher hanya tampil untuk user yang berperan owner; halaman `/onboarding` juga memblokir non-owner (`Forbidden`) dan RLS `insert_org` menolak insert lewat API langsung. Pengecualian: user baru yang belum tergabung di organisasi mana pun tetap boleh membuat organisasi pertamanya (onboarding).
 
 ---
 
@@ -150,7 +151,7 @@ Acceptance criteria:
 - [x] Owner bisa lihat daftar anggota + role masing-masing
 - [x] Owner bisa ubah role anggota (kecuali dirinya sendiri jadi non-owner kalau dia satu-satunya owner)
 - [x] Owner bisa hapus anggota dari organisasi
-- [x] Menu **Anggota** & **Pengaturan** hanya tampil untuk owner — viewer/treasurer tidak melihat menu tersebut di nav, dan membuka URL-nya langsung ditolak (`Forbidden`)
+- [x] Menu **Anggota** & **Pengaturan** hanya tampil untuk owner/co-owner — viewer/treasurer tidak melihat menu tersebut di nav, dan membuka URL-nya langsung ditolak (`Forbidden`)
 
 ---
 
@@ -180,9 +181,11 @@ Fitur berikut sudah dikerjakan atas permintaan eksplisit user dan menjadi bagian
   - [x] Putuskan semua sesi anggota (kick session) — semua refresh token langsung tidak berlaku (access token lama kedaluwarsa otomatis maks. ±1 jam); dipakai untuk prosedur akun kena hack bersama atur ulang password
   - [x] Pesan error di halaman ganti password dibuat jelas saat user memakai password yang sama dengan password sementara ("password baru tidak boleh sama dengan password yang sedang dipakai") — bukan sekadar "gagal" generik
 - **Saldo kumulatif**: dashboard bulan berjalan & laporan bulanan menampilkan saldo awal/akhir yang menyambung antar bulan (bukan reset ke nol).
-- **Export PDF laporan bulanan** (owner/bendahara): tombol "Export PDF" di halaman Laporan mengunduh PDF berisi ringkasan (saldo awal bulan, pemasukan, pengeluaran, selisih, saldo akhir), rincian per kategori, dan daftar transaksi detail per tanggal (tanggal, kategori, keterangan, pemasukan/pengeluaran) — untuk dibagikan ke grup WhatsApp. Dihasilkan server-side via `GET /api/reports?orgId&month&year` (pdfmake, font Roboto di-embed), otorisasi owner/treasurer, `Cache-Control: no-store`. **PDF kini memuat logo KasKita** di header (gambar 64×64 di kiri, judul/org/periode di kanan).
+- **Export PDF laporan bulanan** (semua role): tombol "Export PDF" di halaman Laporan mengunduh PDF berisi ringkasan (saldo awal bulan, pemasukan, pengeluaran, selisih, saldo akhir), rincian per kategori, dan daftar transaksi detail per tanggal (tanggal, kategori, keterangan, pemasukan/pengeluaran) — untuk dibagikan ke grup WhatsApp. Dihasilkan server-side via `GET /api/reports?orgId&month&year` (pdfmake, font Roboto di-embed), `Cache-Control: no-store`. **PDF kini memuat logo KasKita** di header (gambar 64×64 di kiri, judul/org/periode di kanan).
 - **Input tanggal dengan petunjuk format**: field tanggal (filter transaksi + form transaksi) menampilkan teks petunjuk `dd/mm/yyyy` saat kosong di semua perangkat — di browser mobile placeholder native tidak muncul sehingga field tampak kosong/putih; di desktop placeholder native disembunyikan agar tidak dobel.
 - **Skeleton saat ganti filter/periode**: di halaman Transaksi (filter jenis/kategori/tanggal & pagination) dan Laporan (bulan/tahun), daftar/card diganti skeleton saat `router.push` mengambil data baru (`useTransition`), sedangkan kontrol filter tetap terlihat. Halaman Anggota: list skeleton menggantikan teks "Memuat anggota..." (termasuk saat reload setelah ubah peran/hapus/undang).
+- **Role co-owner**: role baru yang berperilaku seperti owner di organisasinya sendiri — bisa kelola anggota (daftarkan/undang, ubah peran, atur ulang password, ganti email, nonaktifkan, putuskan sesi, hapus), akses halaman Anggota & Pengaturan, dan kelola transaksi/kategori. Perbedaan dengan owner: **tidak bisa membuat organisasi baru** dan **tidak bisa menghapus organisasi** (tetap hanya owner asli). Co-owner diangkat via ubah peran di halaman Anggota (undangan via email tetap hanya bendahara/viewer). Owner tetap satu-satunya yang bisa mengangkat/menurunkan/menghapus owner; co-owner tidak bisa menyentuh peran owner.
+- **Fix tata letak mobile (iPhone)**: overlay petunjuk tanggal di `DateInput` disembunyikan di iOS (iOS sudah menampilkan placeholder tanggal native) agar tidak dobel teks, `min-w-0` ditambahkan pada sel filter transaksi agar grid tidak meluap di layar sempit, dan wrapper layout org diberi `overflow-x-clip` agar konten tak bikin scroll horizontal.
 
 
 

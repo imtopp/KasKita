@@ -8,7 +8,7 @@ import {
   resetMemberPasswordSchema,
 } from "@/lib/types";
 
-const ROLE_VALUES = ["owner", "treasurer", "viewer"] as const;
+const ROLE_VALUES = ["owner", "co_owner", "treasurer", "viewer"] as const;
 
 type AdminClient = ReturnType<typeof createServiceClient>;
 
@@ -38,7 +38,7 @@ async function findManageableMember(
   if (member.role === "owner") {
     return {
       error: jsonError(
-        "Aksi ini hanya bisa dilakukan untuk anggota berperan bendahara/viewer.",
+        "Aksi ini hanya bisa dilakukan untuk anggota berperan co-owner/bendahara/viewer.",
         400,
       ),
     };
@@ -46,11 +46,25 @@ async function findManageableMember(
   return { member };
 }
 
+async function getMemberRole(
+  admin: AdminClient,
+  orgId: string,
+  userId: string,
+): Promise<string | null> {
+  const { data } = await admin
+    .from("organization_members")
+    .select("role")
+    .eq("organization_id", orgId)
+    .eq("user_id", userId)
+    .single();
+  return data?.role ?? null;
+}
+
 export async function GET(request: NextRequest) {
   const orgId = request.nextUrl.searchParams.get("orgId");
   if (!orgId) return jsonError("Parameter orgId wajib.", 400);
 
-  const auth = await getRequester(orgId);
+  const auth = await getRequester(orgId, ["owner", "co_owner"]);
   if (!auth.ok) return auth.response;
 
   const admin = createServiceClient();
@@ -105,7 +119,7 @@ export async function POST(request: NextRequest) {
   }
 
   const orgId = typeof body.orgId === "string" ? body.orgId : "";
-  const auth = await getRequester(orgId);
+  const auth = await getRequester(orgId, ["owner", "co_owner"]);
   if (!auth.ok) return auth.response;
 
   const admin = createServiceClient();
@@ -322,7 +336,7 @@ export async function PATCH(request: NextRequest) {
   const userId = typeof body.userId === "string" ? body.userId : "";
   const role = body.role as (typeof ROLE_VALUES)[number];
 
-  const auth = await getRequester(orgId);
+  const auth = await getRequester(orgId, ["owner", "co_owner"]);
   if (!auth.ok) return auth.response;
   if (!userId || !ROLE_VALUES.includes(role)) {
     return jsonError("Data tidak valid.", 400);
@@ -336,6 +350,11 @@ export async function PATCH(request: NextRequest) {
     .eq("user_id", userId)
     .single();
   if (!member) return jsonError("Anggota tidak ditemukan.", 404);
+
+  const actorRole = await getMemberRole(admin, orgId, auth.user.id);
+  if (actorRole !== "owner" && (member.role === "owner" || role === "owner")) {
+    return jsonError("Hanya owner yang bisa mengubah peran owner.", 403);
+  }
 
   if (userId === auth.user.id && role !== "owner") {
     const { count } = await admin
@@ -372,7 +391,7 @@ export async function DELETE(request: NextRequest) {
   const orgId = typeof body.orgId === "string" ? body.orgId : "";
   const userId = typeof body.userId === "string" ? body.userId : "";
 
-  const auth = await getRequester(orgId);
+  const auth = await getRequester(orgId, ["owner", "co_owner"]);
   if (!auth.ok) return auth.response;
   if (!userId) return jsonError("Data tidak valid.", 400);
 
@@ -388,6 +407,11 @@ export async function DELETE(request: NextRequest) {
     .eq("user_id", userId)
     .single();
   if (!member) return jsonError("Anggota tidak ditemukan.", 404);
+
+  const actorRole = await getMemberRole(admin, orgId, auth.user.id);
+  if (actorRole !== "owner" && member.role === "owner") {
+    return jsonError("Hanya owner yang bisa menghapus owner.", 403);
+  }
 
   if (member.role === "owner") {
     const { count } = await admin

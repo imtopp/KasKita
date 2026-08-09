@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
   }
 
   const orgId = typeof body.orgId === "string" ? body.orgId : "";
-  const auth = await getRequester(orgId);
+  const auth = await getRequester(orgId, ["owner", "co_owner"]);
   if (!auth.ok) return auth.response;
 
   const parsed = inviteMemberSchema.safeParse(body);

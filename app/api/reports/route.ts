@@ -20,7 +20,12 @@ export async function GET(request: NextRequest) {
   const yearParam = request.nextUrl.searchParams.get("year");
   if (!orgId) return jsonError("Parameter orgId wajib.", 400);
 
-  const auth = await getRequester(orgId, ["owner", "treasurer"]);
+  const auth = await getRequester(orgId, [
+    "owner",
+    "co_owner",
+    "treasurer",
+    "viewer",
+  ]);
   if (!auth.ok) return auth.response;
 
   const parsedMonth = parseInt(monthParam ?? "", 10);

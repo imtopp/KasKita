@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 
 import { BrandLogo } from "@/components/brand-logo";
 import { CreateOrganizationForm } from "@/components/create-organization-form";
+import { Forbidden } from "@/components/forbidden";
 import { LogoutButton } from "@/components/logout-button";
 import { ThemePicker } from "@/components/theme-picker";
 import { ThemeSetter } from "@/components/theme-setter";
@@ -26,10 +27,33 @@ export default async function OnboardingPage() {
 
   const { data: orgs } = await supabase
     .from("organizations")
-    .select("id")
-    .limit(1);
+    .select("id, slug")
+    .order("created_at", { ascending: true });
 
   const hasOrgs = !!orgs && orgs.length > 0;
+
+  const { data: memberships } = await supabase
+    .from("organization_members")
+    .select("role")
+    .eq("user_id", user.id);
+
+  const isOwnerOfAnyOrg = (memberships ?? []).some(
+    (membership) => membership.role === "owner",
+  );
+
+  const canCreateOrg = !hasOrgs || isOwnerOfAnyOrg;
+
+  if (!canCreateOrg) {
+    const fallbackOrg = orgs?.[0];
+    return (
+      <Forbidden
+        fallbackHref={
+          fallbackOrg ? `/org/${fallbackOrg.slug}/dashboard` : "/login"
+        }
+        message="Hanya owner yang bisa membuat organisasi baru."
+      />
+    );
+  }
 
   const userTheme =
     typeof user.user_metadata?.theme === "string"

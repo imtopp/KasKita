@@ -30,14 +30,12 @@ export function ReportsView({
   year,
   totals,
   breakdown,
-  canManage,
 }: {
   orgId: string;
   month: number;
   year: number;
   totals: MonthTotals;
   breakdown: CategoryBreakdown[];
-  canManage: boolean;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -110,25 +108,23 @@ export function ReportsView({
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-xl font-bold">Laporan</h1>
         <div className="flex flex-wrap items-center gap-2">
-          {canManage && (
-            <Button
-              className="h-11 px-4 text-base"
-              disabled={exporting}
-              onClick={exportPdf}
-            >
-              {exporting ? (
-                <>
-                  <Loader2 className="size-4 animate-spin" aria-hidden />
-                  Menyiapkan...
-                </>
-              ) : (
-                <>
-                  <Download className="size-4" aria-hidden />
-                  Export PDF
-                </>
-              )}
-            </Button>
-          )}
+          <Button
+            className="h-11 px-4 text-base"
+            disabled={exporting}
+            onClick={exportPdf}
+          >
+            {exporting ? (
+              <>
+                <Loader2 className="size-4 animate-spin" aria-hidden />
+                Menyiapkan...
+              </>
+            ) : (
+              <>
+                <Download className="size-4" aria-hidden />
+                Export PDF
+              </>
+            )}
+          </Button>
           <Select
             value={String(month)}
             onValueChange={(value: string | null) => {

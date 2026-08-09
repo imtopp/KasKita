@@ -37,6 +37,13 @@ function randomPassword(): string {
   return Array.from(arr, (n) => chars[n % chars.length]).join("");
 }
 
+const ROLE_LABELS: Record<MemberRow["role"], string> = {
+  owner: "Owner",
+  co_owner: "Co-owner",
+  treasurer: "Bendahara",
+  viewer: "Viewer",
+};
+
 export function MemberManageDialog({
   open,
   onOpenChange,
@@ -209,7 +216,7 @@ export function MemberManageDialog({
           <DialogTitle>Kelola anggota</DialogTitle>
           <DialogDescription>
             {member.name ?? member.email} · {member.email} ·{" "}
-            {member.role === "treasurer" ? "Bendahara" : "Viewer"}
+            {ROLE_LABELS[member.role]}
           </DialogDescription>
         </DialogHeader>
 

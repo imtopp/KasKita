@@ -34,7 +34,9 @@ export default async function CategoriesPage({
     .eq("user_id", user.id)
     .single();
   const canManage =
-    membership?.role === "owner" || membership?.role === "treasurer";
+    membership?.role === "owner" ||
+    membership?.role === "co_owner" ||
+    membership?.role === "treasurer";
 
   const { data: categories } = await supabase
     .from("categories")

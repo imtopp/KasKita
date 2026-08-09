@@ -28,6 +28,7 @@ import type { MemberRow } from "@/lib/types";
 
 const ROLE_LABELS: Record<MemberRow["role"], string> = {
   owner: "Owner",
+  co_owner: "Co-owner",
   treasurer: "Bendahara",
   viewer: "Viewer",
 };
@@ -35,10 +36,13 @@ const ROLE_LABELS: Record<MemberRow["role"], string> = {
 export function MembersView({
   orgId,
   currentUserId,
+  currentRole,
 }: {
   orgId: string;
   currentUserId: string;
+  currentRole: "owner" | "co_owner";
 }) {
+  const isOwner = currentRole === "owner";
   const [members, setMembers] = useState<MemberRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -223,7 +227,7 @@ export function MembersView({
                 <div className="flex shrink-0 items-center gap-2">
                   <Select
                     value={member.role}
-                    disabled={busy}
+                    disabled={busy || (!isOwner && member.role === "owner")}
                     onValueChange={(value: string | null) => {
                       if (value) {
                         changeRole(member, value as MemberRow["role"]);
@@ -234,7 +238,10 @@ export function MembersView({
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="owner">Owner</SelectItem>
+                      {isOwner && (
+                        <SelectItem value="owner">Owner</SelectItem>
+                      )}
+                      <SelectItem value="co_owner">Co-owner</SelectItem>
                       <SelectItem value="treasurer">Bendahara</SelectItem>
                       <SelectItem value="viewer">Viewer</SelectItem>
                     </SelectContent>
@@ -251,19 +258,20 @@ export function MembersView({
                         Kelola
                       </Button>
                     )}
-                  {member.user_id !== currentUserId && (
-                    <Button
-                      variant="destructive"
-                      className="h-11 px-3 text-sm"
-                      disabled={busy}
-                      onClick={() => {
-                        setDeleting(member);
-                        setDeleteError(null);
-                      }}
-                    >
-                      Hapus
-                    </Button>
-                  )}
+                  {member.user_id !== currentUserId &&
+                    (isOwner || member.role !== "owner") && (
+                      <Button
+                        variant="destructive"
+                        className="h-11 px-3 text-sm"
+                        disabled={busy}
+                        onClick={() => {
+                          setDeleting(member);
+                          setDeleteError(null);
+                        }}
+                      >
+                        Hapus
+                      </Button>
+                    )}
                 </div>
               </div>
             </li>

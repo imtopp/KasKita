@@ -36,7 +36,10 @@ export function DesktopNav({
   const pathname = usePathname();
 
   const visibleItems = items.filter(
-    (item) => !OWNER_ONLY.has(item.href) || role === "owner",
+    (item) =>
+      !OWNER_ONLY.has(item.href) ||
+      role === "owner" ||
+      role === "co_owner",
   );
 
   return (

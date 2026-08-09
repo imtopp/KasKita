@@ -35,9 +35,17 @@ export default async function MembersPage({
     .eq("user_id", user.id)
     .single();
 
-  if (membership?.role !== "owner") {
+  const role = membership?.role;
+
+  if (role !== "owner" && role !== "co_owner") {
     return <Forbidden fallbackHref={`/org/${slug}/dashboard`} />;
   }
 
-  return <MembersView orgId={org.id} currentUserId={user.id} />;
+  return (
+    <MembersView
+      orgId={org.id}
+      currentUserId={user.id}
+      currentRole={role}
+    />
+  );
 }

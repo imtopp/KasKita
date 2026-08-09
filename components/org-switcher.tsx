@@ -24,9 +24,11 @@ type OrgOption = {
 export function OrgSwitcher({
   orgs,
   activeSlug,
+  canCreateOrg,
 }: {
   orgs: OrgOption[];
   activeSlug: string;
+  canCreateOrg: boolean;
 }) {
   const router = useRouter();
 
@@ -54,13 +56,17 @@ export function OrgSwitcher({
             <span className="min-w-0 flex-1 truncate">{org.name}</span>
           </SelectItem>
         ))}
-        <SelectSeparator />
-        <SelectItem value={CREATE_VALUE}>
-          <PlusIcon />
-          <span className="min-w-0 flex-1 truncate">
-            Buat organisasi baru
-          </span>
-        </SelectItem>
+        {canCreateOrg && (
+          <>
+            <SelectSeparator />
+            <SelectItem value={CREATE_VALUE}>
+              <PlusIcon />
+              <span className="min-w-0 flex-1 truncate">
+                Buat organisasi baru
+              </span>
+            </SelectItem>
+          </>
+        )}
       </SelectContent>
     </Select>
   );

@@ -40,7 +40,10 @@ export function BottomNav({
   const [pending, setPending] = useState(false);
 
   const visibleItems = items.filter(
-    (item) => !OWNER_ONLY.has(item.href) || role === "owner",
+    (item) =>
+      !OWNER_ONLY.has(item.href) ||
+      role === "owner" ||
+      role === "co_owner",
   );
 
   async function handleLogout() {
