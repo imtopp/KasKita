@@ -156,7 +156,7 @@ export function CreateMemberDialog({
   if (created) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto">
+        <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-x-clip overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {created.existing ? "Anggota ditambahkan" : "Akun anggota dibuat"}
@@ -221,7 +221,7 @@ export function CreateMemberDialog({
             <Button
               type="button"
               variant="outline"
-              className="h-11 w-full text-base"
+              className="h-auto min-h-11 w-full whitespace-normal text-wrap text-base"
               onClick={() => {
                 setMode("existing");
                 setEmailExists(false);
@@ -325,7 +325,7 @@ export function CreateMemberDialog({
             <Button
               type="button"
               variant="link"
-              className="h-auto p-0 text-sm text-primary"
+              className="h-auto p-0 whitespace-normal text-wrap text-left text-sm text-primary"
               onClick={() => {
                 setMode("existing");
                 setServerError(null);

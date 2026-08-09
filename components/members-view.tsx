@@ -238,9 +238,9 @@ export function MembersView({
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {isOwner && (
-                        <SelectItem value="owner">Owner</SelectItem>
-                      )}
+                      <SelectItem value="owner" disabled={!isOwner}>
+                        Owner
+                      </SelectItem>
                       <SelectItem value="co_owner">Co-owner</SelectItem>
                       <SelectItem value="treasurer">Bendahara</SelectItem>
                       <SelectItem value="viewer">Viewer</SelectItem>
