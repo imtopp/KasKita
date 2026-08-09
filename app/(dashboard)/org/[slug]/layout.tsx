@@ -54,6 +54,14 @@ export default async function OrgLayout({
       ? user.user_metadata.theme
       : undefined;
 
+  const { data: membership } = await supabase
+    .from("organization_members")
+    .select("role")
+    .eq("organization_id", activeOrg.id)
+    .eq("user_id", user.id)
+    .single();
+  const role: string | null = membership?.role ?? null;
+
   return (
     <div className="flex min-h-dvh flex-col">
       <ThemeSetter theme={userTheme} />
@@ -69,12 +77,12 @@ export default async function OrgLayout({
             <LogoutButton className="hidden h-9 px-3 text-sm md:inline-flex" />
           </div>
         </div>
-        <DesktopNav slug={slug} />
+        <DesktopNav slug={slug} role={role} />
       </header>
       <main className="mx-auto w-full max-w-5xl flex-1 px-4 pt-4 pb-[calc(5rem+env(safe-area-inset-bottom))] md:py-6">
         {children}
       </main>
-      <BottomNav slug={slug} />
+      <BottomNav slug={slug} role={role} />
     </div>
   );
 }

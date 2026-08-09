@@ -24,13 +24,25 @@ const items = [
   { href: "settings", label: "Pengaturan", icon: Settings },
 ];
 
-export function DesktopNav({ slug }: { slug: string }) {
+const OWNER_ONLY = new Set(["members", "settings"]);
+
+export function DesktopNav({
+  slug,
+  role,
+}: {
+  slug: string;
+  role: string | null;
+}) {
   const pathname = usePathname();
+
+  const visibleItems = items.filter(
+    (item) => !OWNER_ONLY.has(item.href) || role === "owner",
+  );
 
   return (
     <nav className="hidden border-t bg-background md:block">
       <div className="mx-auto flex h-11 w-full max-w-5xl items-center gap-1 px-4">
-        {items.map((item) => {
+        {visibleItems.map((item) => {
           const href = `/org/${slug}/${item.href}`;
           const active =
             pathname === href || pathname.startsWith(`${href}/`);

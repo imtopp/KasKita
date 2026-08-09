@@ -76,6 +76,8 @@ Setiap user yang jadi anggota organisasi punya salah satu role:
 - **treasurer** (bendahara) — bisa catat/edit/hapus transaksi, lihat laporan
 - **viewer** — hanya bisa lihat laporan & riwayat, tidak bisa edit apa-apa
 
+Hak akses menu di nav (mobile `BottomNav` & desktop `DesktopNav`) mengikuti role: menu **Anggota** dan **Pengaturan** HANYA tampil untuk owner (tidak tampil untuk treasurer/viewer); halaman `members` dan `settings` juga memblokir non-owner di server (`Forbidden`).
+
 ---
 
 ## 4. Skema Database (Postgres / Supabase)

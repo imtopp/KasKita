@@ -25,11 +25,23 @@ const items = [
   { href: "settings", label: "Pengaturan", icon: Settings },
 ];
 
-export function BottomNav({ slug }: { slug: string }) {
+const OWNER_ONLY = new Set(["members", "settings"]);
+
+export function BottomNav({
+  slug,
+  role,
+}: {
+  slug: string;
+  role: string | null;
+}) {
   const pathname = usePathname();
   const router = useRouter();
   const supabase = createClient();
   const [pending, setPending] = useState(false);
+
+  const visibleItems = items.filter(
+    (item) => !OWNER_ONLY.has(item.href) || role === "owner",
+  );
 
   async function handleLogout() {
     if (pending) return;
@@ -45,8 +57,13 @@ export function BottomNav({ slug }: { slug: string }) {
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 border-t bg-background pb-[env(safe-area-inset-bottom)] md:hidden">
-      <div className="grid h-16 grid-cols-6">
-        {items.map((item) => {
+      <div
+        className="grid h-16"
+        style={{
+          gridTemplateColumns: `repeat(${visibleItems.length + 1}, minmax(0, 1fr))`,
+        }}
+      >
+        {visibleItems.map((item) => {
           const href = `/org/${slug}/${item.href}`;
           const active =
             pathname === href || pathname.startsWith(`${href}/`);

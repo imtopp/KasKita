@@ -150,6 +150,7 @@ Acceptance criteria:
 - [x] Owner bisa lihat daftar anggota + role masing-masing
 - [x] Owner bisa ubah role anggota (kecuali dirinya sendiri jadi non-owner kalau dia satu-satunya owner)
 - [x] Owner bisa hapus anggota dari organisasi
+- [x] Menu **Anggota** & **Pengaturan** hanya tampil untuk owner — viewer/treasurer tidak melihat menu tersebut di nav, dan membuka URL-nya langsung ditolak (`Forbidden`)
 
 ---
 
