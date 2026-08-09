@@ -223,15 +223,15 @@ export function TransactionsView({
       {isPending ? (
         <TransactionListSkeleton />
       ) : transactions.length === 0 ? (
-        <div className="rounded-xl border border-dashed px-4 py-10 text-center text-sm text-muted-foreground">
+        <div className="animate-in fade-in-0 rounded-xl border border-dashed px-4 py-10 text-center text-sm text-muted-foreground duration-300">
           Belum ada transaksi.
         </div>
       ) : (
-        <ul className="space-y-3">
+        <ul className="animate-in fade-in-0 space-y-3 duration-300">
           {transactions.map((transaction) => (
             <li
               key={transaction.id}
-              className="rounded-xl border bg-card p-4"
+              className="rounded-xl border bg-card p-4 transition-colors duration-200 active:bg-muted/40"
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0 space-y-1">

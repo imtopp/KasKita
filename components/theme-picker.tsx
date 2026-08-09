@@ -42,7 +42,12 @@ export function ThemePicker({
     const next = THEMES.some((t) => t.id === value) ? value : "klasik";
     setSaving(true);
     setTheme(next);
-    document.documentElement.dataset.theme = next;
+    const root = document.documentElement;
+    root.classList.add("theme-transitioning");
+    root.dataset.theme = next;
+    window.setTimeout(() => {
+      root.classList.remove("theme-transitioning");
+    }, 400);
     try {
       localStorage.setItem(THEME_KEY, next);
     } catch {

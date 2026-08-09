@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { AnimatedNumber } from "@/components/animated-number";
 import {
   Card,
   CardContent,
@@ -138,7 +139,7 @@ export default async function OrgDashboardPage({
               balance < 0 && "text-destructive",
             )}
           >
-            {formatRupiah(balance)}
+            <AnimatedNumber value={balance} />
           </p>
         </CardContent>
       </Card>

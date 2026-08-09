@@ -359,6 +359,10 @@ kaskita/
 │   ├── reports-view.tsx
 │   ├── members-view.tsx / create-member-dialog.tsx / invite-member-dialog.tsx / member-manage-dialog.tsx
 │   ├── create-organization-form.tsx
+│   ├── org-name-form.tsx                # ubah nama organisasi (pengaturan)
+│   ├── org-slug-form.tsx                # ubah alamat/slug organisasi (pengaturan)
+│   ├── org-delete-button.tsx            # hapus organisasi (owner only, konfirmasi ketik nama)
+│   ├── animated-number.tsx              # angka count-up (RAF, tanpa dependency)
 │   ├── logout-button.tsx / forbidden.tsx / service-worker-register.tsx
 │   └── invite-accept-view.tsx
 ├── lib/
@@ -484,6 +488,6 @@ Untuk skala pemakaian: beberapa organisasi kecil (RT, arisan, komunitas), total 
 
 Dokumen ini awalnya dipakai sebagai acuan build dari nol; saat ini **seluruh MVP sudah selesai dan live di production** (Vercel). Item yang belum dikerjakan dan sengaja dibiarkan (opsional): export laporan PDF/Excel, grafik tren (Recharts), upload bukti foto, custom domain, approval flow, notifikasi otomatis, multi-currency.
 
-Perubahan yang sudah disetujui user setelah MVP tercatat di section 1 (PWA, tema per-akun, DesktopNav, logo brand) dan di PRD "Fitur Tambahan" (kelola akun anggota, export PDF untuk semua role, role **co-owner** + pembatasan buat organisasi, perbaikan layout mobile). Skema & RLS yang benar-benar berjalan ada di `03-database-migration.sql` — file itu sudah dijalankan dan **tidak boleh diedit**; perubahan skema berikutnya memakai migration file baru (contoh: `supabase/migrations/202608090001_co_owner_role_and_org_creation.sql` untuk role `co_owner` + pembatasan `insert_org`).
+Perubahan yang sudah disetujui user setelah MVP tercatat di section 1 (PWA, tema per-akun, DesktopNav, logo brand) dan di PRD "Fitur Tambahan" (kelola akun anggota, export PDF untuk semua role, role **co-owner** + pembatasan buat organisasi, perbaikan layout mobile, **pengaturan organisasi** — ubah nama/slug, hapus organisasi owner-only, ringkasan anggota; serta polish animasi tanpa dependency). Skema & RLS yang benar-benar berjalan ada di `03-database-migration.sql` — file itu sudah dijalankan dan **tidak boleh diedit**; perubahan skema berikutnya memakai migration file baru (contoh: `supabase/migrations/202608090001_co_owner_role_and_org_creation.sql` untuk role `co_owner` + pembatasan `insert_org`).
 
 > Estimasi pengerjaan awal: ~2-3 minggu kerja santai / ~1 minggu fokus penuh.

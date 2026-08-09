@@ -47,6 +47,26 @@ export const createOrganizationSchema = z.object({
     ),
 });
 
+export const orgNameSchema = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(2, "Nama organisasi minimal 2 karakter")
+    .max(60, "Nama organisasi maksimal 60 karakter"),
+});
+
+export const orgSlugSchema = z.object({
+  slug: z
+    .string()
+    .trim()
+    .min(2, "Slug minimal 2 karakter")
+    .max(63, "Slug maksimal 63 karakter")
+    .regex(
+      /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
+      "Slug hanya huruf kecil, angka, dan tanda strip",
+    ),
+});
+
 export const transactionSchema = z.object({
   type: z.enum(["income", "expense"]),
   category_id: z.string().min(1, "Pilih kategori"),
@@ -66,6 +86,8 @@ export type RegisterForm = z.infer<typeof registerSchema>;
 export type ResetPasswordForm = z.infer<typeof resetPasswordSchema>;
 export type UpdatePasswordForm = z.infer<typeof updatePasswordSchema>;
 export type CreateOrganizationForm = z.infer<typeof createOrganizationSchema>;
+export type OrgNameForm = z.infer<typeof orgNameSchema>;
+export type OrgSlugForm = z.infer<typeof orgSlugSchema>;
 export type TransactionForm = z.infer<typeof transactionSchema>;
 
 export const categorySchema = z.object({

@@ -199,7 +199,7 @@ export function MembersView({
           {members.map((member) => (
             <li
               key={member.id}
-              className="rounded-xl border bg-card p-4"
+              className="rounded-xl border bg-card p-4 transition-colors duration-200 active:bg-muted/40"
             >
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="min-w-0 space-y-0.5">

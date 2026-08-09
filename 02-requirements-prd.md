@@ -187,6 +187,12 @@ Fitur berikut sudah dikerjakan atas permintaan eksplisit user dan menjadi bagian
 - **Skeleton saat ganti filter/periode**: di halaman Transaksi (filter jenis/kategori/tanggal & pagination) dan Laporan (bulan/tahun), daftar/card diganti skeleton saat `router.push` mengambil data baru (`useTransition`), sedangkan kontrol filter tetap terlihat. Halaman Anggota: list skeleton menggantikan teks "Memuat anggota..." (termasuk saat reload setelah ubah peran/hapus/undang).
 - **Role co-owner**: role baru yang berperilaku seperti owner di organisasinya sendiri — bisa kelola anggota (daftarkan/undang, ubah peran, atur ulang password, ganti email, nonaktifkan, putuskan sesi, hapus), akses halaman Anggota & Pengaturan, dan kelola transaksi/kategori. Perbedaan dengan owner: **tidak bisa membuat organisasi baru** dan **tidak bisa menghapus organisasi** (tetap hanya owner asli). Co-owner diangkat via ubah peran di halaman Anggota, atau dipilih langsung saat daftar manual / tambah anggota existing. Undangan via email tetap hanya bendahara/viewer (konsisten dengan constraint tabel `invitations`). Owner tetap satu-satunya yang bisa mengangkat/menurunkan/menghapus owner; co-owner tidak bisa menyentuh peran owner.
 - **Fix tata letak mobile (iPhone)**: overlay petunjuk tanggal di `DateInput` disembunyikan di iOS (iOS sudah menampilkan placeholder tanggal native) agar tidak dobel teks, `min-w-0` ditambahkan pada sel filter transaksi agar grid tidak meluap di layar sempit, dan wrapper layout org diberi `overflow-x-clip` agar konten tak bikin scroll horizontal.
+- **Pengaturan organisasi** (halaman `org/[slug]/settings`, owner/co-owner — menyusul placeholder "Pengaturan organisasi menyusul"):
+  - [x] Ubah nama organisasi (update `organizations.name`, slug tidak berubah)
+  - [x] Ubah alamat (slug) organisasi dengan cek ketersediaan (`is_slug_available`); URL lama ikut berubah
+  - [x] Hapus organisasi permanen — **hanya owner** (co-owner ditolak RLS `delete_org_owner_only`), konfirmasi wajib mengetik ulang nama organisasi; seluruh data terhapus (cascade)
+  - [x] Ringkasan anggota read-only (jumlah per role)
+- **Polish animasi (tanpa dependency)**: dialog/dropdown lebih lembut (durasi + slide), skeleton shimmer, feedback item list & bottom nav, fade-in daftar transaksi, count-up saldo dashboard, transisi warna saat ganti tema — semua murni CSS/Tailwind (`tw-animate-css` + keyframe) & JS ringan (requestAnimationFrame).
 
 
 
