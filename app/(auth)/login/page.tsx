@@ -124,7 +124,7 @@ function LoginForm() {
             )}
           </div>
         </CardContent>
-        <CardFooter className="flex-col items-stretch gap-4 pt-8">
+        <CardFooter className="flex-col items-stretch gap-4">
           <Button
             type="submit"
             disabled={isSubmitting || redirecting}
