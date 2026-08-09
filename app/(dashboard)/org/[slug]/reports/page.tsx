@@ -1,9 +1,13 @@
 import { notFound } from "next/navigation";
 
 import { ReportsView } from "@/components/reports-view";
+import {
+  summarizeMonth,
+  type PriorBalanceRow,
+  type TransactionSummaryRow,
+} from "@/lib/reports-data";
 import { createClient } from "@/lib/supabase/server";
-import type { CategoryBreakdown, MonthTotals } from "@/lib/types";
-import { categoryFromEmbedded, pad2 } from "@/lib/utils";
+import { pad2 } from "@/lib/utils";
 
 function first(value: string | string[] | undefined): string | undefined {
   return typeof value === "string" ? value : undefined;
@@ -24,6 +28,10 @@ export default async function ReportsPage({
   const sp = await searchParams;
   const supabase = await createClient();
 
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
   const { data: org } = await supabase
     .from("organizations")
     .select("id")
@@ -32,6 +40,15 @@ export default async function ReportsPage({
   if (!org) {
     notFound();
   }
+
+  const { data: membership } = await supabase
+    .from("organization_members")
+    .select("role")
+    .eq("organization_id", org.id)
+    .eq("user_id", user?.id ?? "")
+    .single();
+  const canManage =
+    membership?.role === "owner" || membership?.role === "treasurer";
 
   const now = new Date();
   const parsedMonth = parseInt(first(sp.month) ?? "", 10);
@@ -53,59 +70,25 @@ export default async function ReportsPage({
     .gte("transaction_date", firstDay)
     .lte("transaction_date", lastDay);
 
-  let income = 0;
-  let expense = 0;
-  const byCategory = new Map<string, CategoryBreakdown>();
-  type ReportRow = {
-    amount: number;
-    type: "income" | "expense";
-    category_id: string | null;
-    categories: { name: string }[] | { name: string } | null;
-  };
-  for (const row of (rows ?? []) as ReportRow[]) {
-    const amount = Number(row.amount);
-    if (row.type === "income") income += amount;
-    else expense += amount;
-
-    const name =
-      categoryFromEmbedded(row.categories)?.name ?? "Tanpa kategori";
-    const key = row.category_id ?? "none";
-    const current = byCategory.get(key);
-    if (current) {
-      current.total += amount;
-    } else {
-      byCategory.set(key, { name, type: row.type, total: amount });
-    }
-  }
-
-  const breakdown = [...byCategory.values()].sort((a, b) => b.total - a.total);
-
   const { data: priorRows } = await supabase
     .from("transactions")
     .select("amount, type")
     .eq("organization_id", org.id)
     .lt("transaction_date", firstDay);
-  let openingBalance = 0;
-  for (const row of (priorRows ?? []) as { amount: number; type: "income" | "expense" }[]) {
-    if (row.type === "income") openingBalance += Number(row.amount);
-    else openingBalance -= Number(row.amount);
-  }
 
-  const net = income - expense;
-  const totals: MonthTotals = {
-    income,
-    expense,
-    net,
-    openingBalance,
-    closingBalance: openingBalance + net,
-  };
+  const { totals, breakdown } = summarizeMonth(
+    (rows ?? []) as TransactionSummaryRow[],
+    (priorRows ?? []) as PriorBalanceRow[],
+  );
 
   return (
     <ReportsView
+      orgId={org.id}
       month={month}
       year={year}
       totals={totals}
       breakdown={breakdown}
+      canManage={canManage}
     />
   );
 }

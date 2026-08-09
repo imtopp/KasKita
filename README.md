@@ -17,7 +17,7 @@ Platform kas organisasi (multi-tenant) — catat pemasukan/pengeluaran untuk RT,
 - Auth: register, login, logout, reset password, wajib ganti password untuk akun yang dibuat manual
 - Organisasi: buat organisasi, switcher multi-organisasi, isolasi data penuh via RLS
 - Transaksi: catat masuk/keluar, kategori per organisasi, filter, edit, hapus
-- Dashboard (saldo saat ini + ringkasan bulan berjalan dengan saldo awal/akhir) & laporan bulanan (saldo awal/akhir kumulatif + ringkasan per kategori)
+- Dashboard (saldo saat ini + ringkasan bulan berjalan dengan saldo awal/akhir) & laporan bulanan (saldo awal/akhir kumulatif + ringkasan per kategori) + **export PDF laporan bulanan** (owner/bendahara)
 - Kelola anggota: undang via email, daftarkan manual (password sementara), **tambah anggota yang sudah punya akun**, ubah role, **atur ulang password**, **ganti email**, **nonaktifkan/aktifkan akun**, **putuskan semua sesi**, hapus
 - **Tema per-akun**: 5 tema (Klasik, Kawaii, Ocean, Forest, Sunrise) — pilihan tersimpan di akun
 - Indikator loading di semua aksi (spinner tombol/form) + skeleton & spinner saat pindah menu
@@ -46,7 +46,7 @@ SUPABASE_SERVICE_ROLE_KEY=...   # server-only, JANGAN pernah di client
 
 - `app/(auth)/` — login, register, reset-password, update-password
 - `app/(dashboard)/` — onboarding + `org/[slug]/` (dashboard, transactions, categories, reports, members, settings)
-- `app/api/` — hanya undangan & kelola anggota (butuh `service_role`)
+- `app/api/` — undangan, kelola anggota (butuh `service_role`), & laporan PDF bulanan
 - `components/ui/` — shadcn; `lib/supabase/` — client/server/middleware
 - `proxy.ts` — proteksi route & refresh session (Next 16, pengganti `middleware.ts`)
 

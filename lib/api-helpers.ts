@@ -15,7 +15,10 @@ export function jsonError(message: string, status: number) {
   return NextResponse.json({ error: message }, { status });
 }
 
-export async function getRequester(orgId: string) {
+export async function getRequester(
+  orgId: string,
+  roles: readonly string[] = ["owner"],
+) {
   const supabase = await createClient();
   const {
     data: { user },
@@ -29,8 +32,12 @@ export async function getRequester(orgId: string) {
     .eq("organization_id", orgId)
     .eq("user_id", user.id)
     .single();
-  if (membership?.role !== "owner") {
-    return { ok: false as const, response: jsonError("Hanya owner yang bisa melakukan aksi ini.", 403) };
+  if (!membership || !roles.includes(membership.role)) {
+    const message =
+      roles.length === 1 && roles[0] === "owner"
+        ? "Hanya owner yang bisa melakukan aksi ini."
+        : "Kamu tidak punya izin untuk melakukan aksi ini.";
+    return { ok: false as const, response: jsonError(message, 403) };
   }
   return { ok: true as const, user };
 }

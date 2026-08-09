@@ -293,6 +293,7 @@ kaskita/
 │   │   ├── invitations/route.ts        # undang via email + daftarkan anggota manual
 │   │   ├── invitations/accept/route.ts # validasi token + expires_at
 │   │   └── members/route.ts            # kelola anggota: buat/existing, ubah role, reset password, ganti email, nonaktifkan/aktifkan akun, putuskan semua sesi, hapus
+│   │   └── reports/route.ts            # GET laporan bulanan PDF (pdfmake, owner/bendahara, no-store)
 │   ├── layout.tsx                      # font Baloo 2, theme-init script, PWA manifest, theme color
 │   └── page.tsx                        # redirect: login / org pertama / onboarding
 ├── components/
@@ -317,6 +318,10 @@ kaskita/
 │   │   ├── server.ts                   # supabase client (server component)
 │   │   └── middleware.ts               # helper updateSession
 │   ├── types.ts                        # TypeScript types + zod schema dari DB
+│   ├── reports-data.ts                 # agregasi laporan bulanan bersama (summarizeMonth) — dipakai page & API route
+│   ├── pdf/                            # generator PDF laporan (server-side, pdfmake 0.3)
+│   │   ├── fonts.ts                    # register font Roboto (base64 dari pdfmake vfs_fonts) ke virtualfs + setFonts
+│   │   └── report.ts                   # docDefinition laporan + generateReportPdf() → Buffer
 │   ├── utils.ts / api-helpers.ts / auth-errors.ts
 ├── proxy.ts                            # Next 16: pengganti middleware.ts — proteksi route, refresh session
 └── supabase/

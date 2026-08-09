@@ -111,7 +111,7 @@ Acceptance criteria:
 Acceptance criteria:
 - [x] Pilih bulan & tahun → tampilkan saldo awal bulan (kumulatif sejak awal organisasi), total income, expense, selisih, dan saldo akhir bulan (kumulatif — menyambung antar bulan, bukan reset ke nol)
 - [x] Breakdown per kategori
-- [ ] (Fase 2) Export ke PDF
+- [x] Export ke PDF (owner/bendahara) — PDF detail: ringkasan saldo awal/akhir, rincian per kategori, dan daftar transaksi per tanggal untuk dibagikan via WhatsApp
 
 ---
 
@@ -180,6 +180,7 @@ Fitur berikut sudah dikerjakan atas permintaan eksplisit user dan menjadi bagian
   - [x] Putuskan semua sesi anggota (kick session) — semua refresh token langsung tidak berlaku (access token lama kedaluwarsa otomatis maks. ±1 jam); dipakai untuk prosedur akun kena hack bersama atur ulang password
   - [x] Pesan error di halaman ganti password dibuat jelas saat user memakai password yang sama dengan password sementara ("password baru tidak boleh sama dengan password yang sedang dipakai") — bukan sekadar "gagal" generik
 - **Saldo kumulatif**: dashboard bulan berjalan & laporan bulanan menampilkan saldo awal/akhir yang menyambung antar bulan (bukan reset ke nol).
+- **Export PDF laporan bulanan** (owner/bendahara): tombol "Export PDF" di halaman Laporan mengunduh PDF berisi ringkasan (saldo awal bulan, pemasukan, pengeluaran, selisih, saldo akhir), rincian per kategori, dan daftar transaksi detail per tanggal (tanggal, kategori, keterangan, pemasukan/pengeluaran) — untuk dibagikan ke grup WhatsApp. Dihasilkan server-side via `GET /api/reports?orgId&month&year` (pdfmake, font Roboto di-embed), otorisasi owner/treasurer, `Cache-Control: no-store`.
 
 
 
