@@ -110,6 +110,8 @@ export type MonthTotals = {
   income: number;
   expense: number;
   net: number;
+  openingBalance: number;
+  closingBalance: number;
 };
 
 export type CategoryBreakdown = {

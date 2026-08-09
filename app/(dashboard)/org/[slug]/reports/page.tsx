@@ -79,7 +79,26 @@ export default async function ReportsPage({
   }
 
   const breakdown = [...byCategory.values()].sort((a, b) => b.total - a.total);
-  const totals: MonthTotals = { income, expense, net: income - expense };
+
+  const { data: priorRows } = await supabase
+    .from("transactions")
+    .select("amount, type")
+    .eq("organization_id", org.id)
+    .lt("transaction_date", firstDay);
+  let openingBalance = 0;
+  for (const row of (priorRows ?? []) as { amount: number; type: "income" | "expense" }[]) {
+    if (row.type === "income") openingBalance += Number(row.amount);
+    else openingBalance -= Number(row.amount);
+  }
+
+  const net = income - expense;
+  const totals: MonthTotals = {
+    income,
+    expense,
+    net,
+    openingBalance,
+    closingBalance: openingBalance + net,
+  };
 
   return (
     <ReportsView

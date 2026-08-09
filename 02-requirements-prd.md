@@ -109,7 +109,7 @@ Acceptance criteria:
 
 ### US-4.2 Laporan bulanan
 Acceptance criteria:
-- [x] Pilih bulan & tahun → tampilkan total income, expense, saldo akhir bulan itu
+- [x] Pilih bulan & tahun → tampilkan saldo awal bulan (kumulatif sejak awal organisasi), total income, expense, selisih, dan saldo akhir bulan (kumulatif — menyambung antar bulan, bukan reset ke nol)
 - [x] Breakdown per kategori
 - [ ] (Fase 2) Export ke PDF
 

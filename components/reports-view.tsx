@@ -101,6 +101,14 @@ export function ReportsView({
         <CardContent className="space-y-3">
           <div className="flex items-center justify-between">
             <span className="text-sm text-muted-foreground">
+              Saldo awal bulan
+            </span>
+            <span className="text-sm font-semibold">
+              {formatRupiah(totals.openingBalance)}
+            </span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-muted-foreground">
               Total pemasukan
             </span>
             <span className="text-sm font-semibold text-emerald-600">
@@ -115,12 +123,20 @@ export function ReportsView({
               {formatRupiah(totals.expense)}
             </span>
           </div>
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-muted-foreground">
+              Selisih bulan ini
+            </span>
+            <span className="text-sm font-semibold">
+              {formatRupiah(totals.net)}
+            </span>
+          </div>
           <div className="flex items-center justify-between border-t pt-3">
             <span className="text-sm text-muted-foreground">
               Saldo akhir bulan
             </span>
             <span className="text-sm font-semibold">
-              {formatRupiah(totals.net)}
+              {formatRupiah(totals.closingBalance)}
             </span>
           </div>
         </CardContent>

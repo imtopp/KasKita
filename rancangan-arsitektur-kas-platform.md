@@ -22,7 +22,7 @@ Contoh pemakaian:
 3. Catat transaksi (pemasukan/pengeluaran) dengan kategori, tanggal, nominal, catatan, bukti foto (opsional)
 4. Lihat saldo kas real-time
 5. Riwayat transaksi (filter by tanggal, kategori, jenis)
-6. Laporan bulanan (ringkasan masuk/keluar/saldo akhir)
+6. Laporan bulanan (ringkasan saldo awal, masuk/keluar/saldo akhir — kumulatif antar bulan)
 7. Multi-organisasi switcher (pindah antar organisasi tanpa logout)
 8. Mobile-friendly (responsive, terasa seperti app di HP)
 
@@ -369,7 +369,7 @@ Sudah terpasang: `manifest` (Next.js) + service worker (`public/sw.js`) + ikon 1
 - [x] Kartu ringkasan saldo di dashboard
 
 ### Fase 3 — Laporan (2-3 hari)
-- [x] Laporan bulanan (total masuk, keluar, saldo akhir)
+- [x] Laporan bulanan (saldo awal kumulatif, total masuk, keluar, saldo akhir kumulatif)
 - [ ] Grafik tren sederhana (pakai Recharts)  *(belum dikerjakan)*
 - [ ] Export laporan (PDF/Excel) — fase 2+  *(belum dikerjakan)*
 
