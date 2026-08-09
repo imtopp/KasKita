@@ -136,12 +136,12 @@ export const createMemberSchema = z.object({
     .string()
     .min(8, "Password minimal 8 karakter")
     .max(72, "Password maksimal 72 karakter"),
-  role: z.enum(["treasurer", "viewer"]),
+  role: z.enum(["treasurer", "co_owner", "viewer"]),
 });
 
 export const addExistingMemberSchema = z.object({
   email: z.string().trim().email("Format email tidak valid"),
-  role: z.enum(["treasurer", "viewer"]),
+  role: z.enum(["treasurer", "co_owner", "viewer"]),
 });
 
 export const resetMemberPasswordSchema = z.object({

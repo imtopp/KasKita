@@ -148,7 +148,7 @@ create table invitations (
   id uuid primary key default gen_random_uuid(),
   organization_id uuid references organizations(id) on delete cascade not null,
   email text not null,
-  role text not null check (role in ('treasurer', 'viewer')),  -- undangan TIDAK menerima owner/co-owner (role itu diatur via ubah peran di halaman Anggota)
+  role text not null check (role in ('treasurer', 'viewer')),  -- undangan TIDAK menerima owner/co-owner (role itu diatur via ubah peran di halaman Anggota, atau saat daftar manual / tambah existing)
   invited_by uuid references auth.users(id) not null,
   status text not null default 'pending' check (status in ('pending', 'accepted', 'expired')),
   token uuid default gen_random_uuid(),
@@ -193,6 +193,33 @@ returns text as $$
   limit 1;
 $$ language sql security definer stable;
 
+-- Helper: bolehkah user membuat organisasi baru? (via migration 202608090001)
+-- true kalau belum tergabung di org mana pun ATAU berperan owner.
+create or replace function can_create_organization()
+returns boolean as $$
+  select (
+    not exists (
+      select 1 from organization_members where user_id = auth.uid()
+    )
+    or exists (
+      select 1 from organization_members where user_id = auth.uid() and role = 'owner'
+    )
+  );
+$$ language sql security definer stable;
+
+-- Helper (RPC): cek ketersediaan slug organisasi sebelum submit form
+-- (security definer supaya bisa baca semua organizations walau RLS hanya
+--  menampilkan org milik user yang login). Hanya role authenticated.
+create or replace function is_slug_available(slug text)
+returns boolean
+language sql security definer stable
+as $$
+  select not exists (
+    select 1 from organizations
+    where organizations.slug = is_slug_available.slug
+  );
+$$;
+
 -- ORGANIZATIONS: user hanya lihat org yang dia anggotai
 create policy "select_own_orgs" on organizations
   for select using (is_org_member(id));
@@ -200,11 +227,15 @@ create policy "select_own_orgs" on organizations
 -- insert_org: hanya owner (atau user yang belum tergabung di org mana pun) —
 -- via migration 202608090001: created_by = auth.uid() AND can_create_organization()
 create policy "insert_org" on organizations
-  for insert with check (created_by = auth.uid());
+  for insert with check (created_by = auth.uid() and can_create_organization());
 
 -- update: owner/co_owner (policy diubah jadi "update_org_manage"); delete: owner only (via migration 202608090001)
 create policy "update_org_manage" on organizations
   for update using (get_org_role(id) in ('owner', 'co_owner'));
+
+-- delete org: tetap owner only
+create policy "delete_org_owner_only" on organizations
+  for delete using (get_org_role(id) = 'owner');
 
 -- ORGANIZATION_MEMBERS: hanya bisa lihat anggota di org yang sama
 create policy "select_members_same_org" on organization_members
@@ -214,29 +245,41 @@ create policy "select_members_same_org" on organization_members
 create policy "insert_member_manage" on organization_members
   for insert with check (get_org_role(organization_id) in ('owner', 'co_owner'));
 
--- CATEGORIES: semua anggota bisa lihat, owner/co-owner/treasurer bisa edit
+create policy "update_member_manage" on organization_members
+  for update using (get_org_role(organization_id) in ('owner', 'co_owner'));
+
+create policy "delete_member_manage" on organization_members
+  for delete using (get_org_role(organization_id) in ('owner', 'co_owner'));
+
+-- CATEGORIES: semua anggota bisa lihat, owner/co-owner/treasurer bisa CRUD (via migration 202608090001)
 create policy "select_categories" on categories
   for select using (is_org_member(organization_id));
 
 create policy "insert_categories" on categories
-  for insert with check (get_org_role(organization_id) in ('owner', 'treasurer'));
+  for insert with check (get_org_role(organization_id) in ('owner', 'co_owner', 'treasurer'));
+
+create policy "update_categories" on categories
+  for update using (get_org_role(organization_id) in ('owner', 'co_owner', 'treasurer'));
+
+create policy "delete_categories" on categories
+  for delete using (get_org_role(organization_id) in ('owner', 'co_owner', 'treasurer'));
 
 -- TRANSACTIONS: semua anggota bisa lihat, owner/co-owner/treasurer bisa CRUD
 create policy "select_transactions" on transactions
   for select using (is_org_member(organization_id));
 
 create policy "insert_transactions" on transactions
-  for insert with check (get_org_role(organization_id) in ('owner', 'treasurer'));
+  for insert with check (get_org_role(organization_id) in ('owner', 'co_owner', 'treasurer'));
 
 create policy "update_transactions" on transactions
-  for update using (get_org_role(organization_id) in ('owner', 'treasurer'));
+  for update using (get_org_role(organization_id) in ('owner', 'co_owner', 'treasurer'));
 
 create policy "delete_transactions" on transactions
-  for delete using (get_org_role(organization_id) in ('owner', 'treasurer'));
+  for delete using (get_org_role(organization_id) in ('owner', 'co_owner', 'treasurer'));
 
 -- INVITATIONS: hanya owner yang bisa kelola undangan
 create policy "manage_invitations" on invitations
-  for all using (get_org_role(organization_id) = 'owner');
+  for all using (get_org_role(organization_id) in ('owner', 'co_owner'));
 ```
 
 > Prinsip pentingnya: **jangan pernah filter `organization_id` hanya di kode frontend/backend**. RLS di atas jadi jaring pengaman terakhir — walau ada bug di aplikasi, database tetap menolak akses data lintas-organisasi.
@@ -245,11 +288,11 @@ create policy "manage_invitations" on invitations
 
 ## 6. Alur Autentikasi & Multi-Tenant Switching
 
-1. User register/login via Supabase Auth (email + password, atau magic link)
+1. User register/login via Supabase Auth (email + password)
 2. Setelah login, aplikasi query `organization_members` untuk ambil daftar organisasi milik user
 3. Jika user cuma punya 1 organisasi → langsung masuk ke dashboard organisasi itu
 4. Jika punya lebih dari 1 → tampilkan **organization switcher** (dropdown di navbar) untuk pilih organisasi aktif
-5. Organisasi aktif disimpan di **state aplikasi** (React context) + query param URL, misal: `/org/rt-05-sukamaju/dashboard`
+5. Organisasi aktif tersimpan di **query param URL**, misal: `/org/rt-05-sukamaju/dashboard` — tanpa global state/React context (konsisten dengan 04-coding-standards)
 6. Setiap request ke Supabase otomatis dibatasi oleh RLS berdasarkan token auth user, jadi walau organisasi aktif ganti-ganti, data tetap aman
 
 ---
@@ -314,7 +357,7 @@ kaskita/
 │   ├── transactions-view.tsx / transaction-form-dialog.tsx
 │   ├── categories-view.tsx / category-form-dialog.tsx
 │   ├── reports-view.tsx
-│   ├── members-view.tsx / create-member-dialog.tsx / invite-member-dialog.tsx
+│   ├── members-view.tsx / create-member-dialog.tsx / invite-member-dialog.tsx / member-manage-dialog.tsx
 │   ├── create-organization-form.tsx
 │   ├── logout-button.tsx / forbidden.tsx / service-worker-register.tsx
 │   └── invite-accept-view.tsx

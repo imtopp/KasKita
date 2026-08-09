@@ -73,7 +73,8 @@ Acceptance criteria:
 **Sebagai** owner/co-owner/treasurer, **saya ingin** mencatat transaksi masuk/keluar.
 
 Acceptance criteria:
-- [ ] Form: jenis (income/expense), kategori (dropdown dari `categories` organisasi aktif), nominal, tanggal (default hari ini), deskripsi (opsional), upload foto bukti (opsional)
+- [x] Form: jenis (income/expense), kategori (dropdown dari `categories` organisasi aktif), nominal, tanggal (default hari ini), deskripsi (opsional)
+- [ ] Upload foto bukti (opsional) — belum dikerjakan; kolom `receipt_url` menganggur
 - [x] Nominal harus > 0, validasi di frontend DAN mengandalkan `check` constraint di database sebagai lapisan kedua
 - [x] Setelah submit sukses → transaksi muncul di list, saldo di dashboard ter-update
 - [x] **Role `viewer` TIDAK BOLEH bisa akses form ini** — tombol "tambah transaksi" disembunyikan/disabled untuk viewer, DAN backend/RLS harus menolak insert kalau tetap dicoba lewat API langsung
@@ -174,7 +175,7 @@ Fitur berikut sudah dikerjakan atas permintaan eksplisit user dan menjadi bagian
 - **PWA installable** (manifest + service worker + ikon 192/512).
 - **Logo brand** KasKita dari file logo user.
 - **Indikator loading**: spinner + `disabled` di semua tombol aksi; tombol login/register tetap loading sampai redirect ke halaman tujuan; saat pindah menu muncul skeleton konten (`loading.tsx`) + spinner di link navigasi (`useLinkStatus`).
-- **Kelola akun anggota oleh owner** (tombol "Kelola" pada tiap anggota bendahara/viewer di halaman Anggota):
+- **Kelola akun anggota oleh owner/co-owner** (tombol "Kelola" pada tiap anggota selain owner — bendahara/viewer/co-owner — di halaman Anggota):
   - [x] Atur ulang password sementara — anggota diminta ganti password saat login berikutnya (sama seperti akun yang baru didaftarkan)
   - [x] Ganti email anggota (jika dia lupa akses email / minta tolong diganti)
   - [x] Nonaktifkan / aktifkan kembali akun anggota (anggota tidak bisa login selama nonaktif)
@@ -182,9 +183,9 @@ Fitur berikut sudah dikerjakan atas permintaan eksplisit user dan menjadi bagian
   - [x] Pesan error di halaman ganti password dibuat jelas saat user memakai password yang sama dengan password sementara ("password baru tidak boleh sama dengan password yang sedang dipakai") — bukan sekadar "gagal" generik
 - **Saldo kumulatif**: dashboard bulan berjalan & laporan bulanan menampilkan saldo awal/akhir yang menyambung antar bulan (bukan reset ke nol).
 - **Export PDF laporan bulanan** (semua role): tombol "Export PDF" di halaman Laporan mengunduh PDF berisi ringkasan (saldo awal bulan, pemasukan, pengeluaran, selisih, saldo akhir), rincian per kategori, dan daftar transaksi detail per tanggal (tanggal, kategori, keterangan, pemasukan/pengeluaran) — untuk dibagikan ke grup WhatsApp. Dihasilkan server-side via `GET /api/reports?orgId&month&year` (pdfmake, font Roboto di-embed), `Cache-Control: no-store`. **PDF kini memuat logo KasKita** di header (gambar 64×64 di kiri, judul/org/periode di kanan).
-- **Input tanggal dengan petunjuk format**: field tanggal (filter transaksi + form transaksi) menampilkan teks petunjuk `dd/mm/yyyy` saat kosong di semua perangkat — di browser mobile placeholder native tidak muncul sehingga field tampak kosong/putih; di desktop placeholder native disembunyikan agar tidak dobel.
+- **Input tanggal dengan petunjuk format**: field tanggal (filter transaksi + form transaksi) menampilkan teks petunjuk `dd/mm/yyyy` saat kosong di Android/desktop (di browser mobile placeholder native tidak muncul sehingga field tampak kosong/putih); di iOS overlay petunjuk disembunyikan karena iOS sudah menampilkan placeholder tanggal native — menghindari dobel/overlap (lihat entri fix iPhone di bawah).
 - **Skeleton saat ganti filter/periode**: di halaman Transaksi (filter jenis/kategori/tanggal & pagination) dan Laporan (bulan/tahun), daftar/card diganti skeleton saat `router.push` mengambil data baru (`useTransition`), sedangkan kontrol filter tetap terlihat. Halaman Anggota: list skeleton menggantikan teks "Memuat anggota..." (termasuk saat reload setelah ubah peran/hapus/undang).
-- **Role co-owner**: role baru yang berperilaku seperti owner di organisasinya sendiri — bisa kelola anggota (daftarkan/undang, ubah peran, atur ulang password, ganti email, nonaktifkan, putuskan sesi, hapus), akses halaman Anggota & Pengaturan, dan kelola transaksi/kategori. Perbedaan dengan owner: **tidak bisa membuat organisasi baru** dan **tidak bisa menghapus organisasi** (tetap hanya owner asli). Co-owner diangkat via ubah peran di halaman Anggota (undangan via email tetap hanya bendahara/viewer). Owner tetap satu-satunya yang bisa mengangkat/menurunkan/menghapus owner; co-owner tidak bisa menyentuh peran owner.
+- **Role co-owner**: role baru yang berperilaku seperti owner di organisasinya sendiri — bisa kelola anggota (daftarkan/undang, ubah peran, atur ulang password, ganti email, nonaktifkan, putuskan sesi, hapus), akses halaman Anggota & Pengaturan, dan kelola transaksi/kategori. Perbedaan dengan owner: **tidak bisa membuat organisasi baru** dan **tidak bisa menghapus organisasi** (tetap hanya owner asli). Co-owner diangkat via ubah peran di halaman Anggota, atau dipilih langsung saat daftar manual / tambah anggota existing. Undangan via email tetap hanya bendahara/viewer (konsisten dengan constraint tabel `invitations`). Owner tetap satu-satunya yang bisa mengangkat/menurunkan/menghapus owner; co-owner tidak bisa menyentuh peran owner.
 - **Fix tata letak mobile (iPhone)**: overlay petunjuk tanggal di `DateInput` disembunyikan di iOS (iOS sudah menampilkan placeholder tanggal native) agar tidak dobel teks, `min-w-0` ditambahkan pada sel filter transaksi agar grid tidak meluap di layar sempit, dan wrapper layout org diberi `overflow-x-clip` agar konten tak bikin scroll horizontal.
 
 

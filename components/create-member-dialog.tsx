@@ -271,7 +271,7 @@ export function CreateMemberDialog({
                 <Input
                   id="memPassword"
                   type="text"
-                  className="h-11 font-mono"
+                  className="h-11 min-w-0 flex-1 font-mono"
                   aria-invalid={!!errors.password}
                   {...register("password")}
                 />
@@ -304,13 +304,18 @@ export function CreateMemberDialog({
             <Select
               value={watch("role")}
               onValueChange={(value: string | null) => {
-                if (value) setValue("role", value as "treasurer" | "viewer");
+                if (value)
+                  setValue(
+                    "role",
+                    value as "co_owner" | "treasurer" | "viewer",
+                  );
               }}
             >
               <SelectTrigger className="h-11 w-full data-[size=default]:h-11">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="co_owner">Co-owner</SelectItem>
                 <SelectItem value="treasurer">Bendahara</SelectItem>
                 <SelectItem value="viewer">Viewer</SelectItem>
               </SelectContent>
