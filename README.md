@@ -17,7 +17,7 @@ Platform kas organisasi (multi-tenant) — catat pemasukan/pengeluaran untuk RT,
 - Auth: register, login, logout, reset password, wajib ganti password untuk akun yang dibuat manual
 - Organisasi: buat organisasi, switcher multi-organisasi, isolasi data penuh via RLS
 - Transaksi: catat masuk/keluar, kategori per organisasi, filter, edit, hapus
-- Dashboard (saldo saat ini) & laporan bulanan (saldo awal/akhir kumulatif + ringkasan per kategori)
+- Dashboard (saldo saat ini + ringkasan bulan berjalan dengan saldo awal/akhir) & laporan bulanan (saldo awal/akhir kumulatif + ringkasan per kategori)
 - Kelola anggota: undang via email, daftarkan manual (password sementara), **tambah anggota yang sudah punya akun**, ubah role, hapus
 - **Tema per-akun**: 5 tema (Klasik, Kawaii, Ocean, Forest, Sunrise) — pilihan tersimpan di akun
 - Indikator loading di semua aksi (spinner tombol/form) + skeleton & spinner saat pindah menu

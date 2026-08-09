@@ -103,7 +103,7 @@ Acceptance criteria:
 ### US-4.1 Dashboard ringkasan
 Acceptance criteria:
 - [x] Kartu saldo saat ini (total income - total expense sepanjang waktu)
-- [x] Ringkasan bulan berjalan (income, expense, net)
+- [x] Ringkasan bulan berjalan (saldo awal bulan, income, expense, net, saldo akhir bulan) — konsisten dengan laporan
 - [x] 5 transaksi terbaru
 - [x] Semua data terscope ke organisasi aktif saja
 

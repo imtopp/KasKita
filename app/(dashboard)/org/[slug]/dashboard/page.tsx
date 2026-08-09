@@ -81,6 +81,19 @@ export default async function OrgDashboardPage({
     if (tx.type === "income") monthIncome += Number(tx.amount);
     else monthExpense += Number(tx.amount);
   }
+  const monthNet = monthIncome - monthExpense;
+
+  const { data: priorTx } = await supabase
+    .from("transactions")
+    .select("amount, type")
+    .eq("organization_id", org.id)
+    .lt("transaction_date", firstDay);
+  let openingBalance = 0;
+  for (const tx of priorTx ?? []) {
+    if (tx.type === "income") openingBalance += Number(tx.amount);
+    else openingBalance -= Number(tx.amount);
+  }
+  const closingBalance = openingBalance + monthNet;
 
   const { data: recent } = await supabase
     .from("transactions")
@@ -138,6 +151,14 @@ export default async function OrgDashboardPage({
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="flex items-center justify-between">
+            <span className="text-sm text-muted-foreground">
+              Saldo awal bulan
+            </span>
+            <span className="text-sm font-semibold">
+              {formatRupiah(openingBalance)}
+            </span>
+          </div>
+          <div className="flex items-center justify-between">
             <span className="text-sm text-muted-foreground">Pemasukan</span>
             <span className="text-sm font-semibold text-emerald-600">
               {formatRupiah(monthIncome)}
@@ -149,10 +170,20 @@ export default async function OrgDashboardPage({
               {formatRupiah(monthExpense)}
             </span>
           </div>
-          <div className="flex items-center justify-between border-t pt-3">
-            <span className="text-sm text-muted-foreground">Selisih</span>
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-muted-foreground">
+              Selisih bulan ini
+            </span>
             <span className="text-sm font-semibold">
-              {formatRupiah(monthIncome - monthExpense)}
+              {formatRupiah(monthNet)}
+            </span>
+          </div>
+          <div className="flex items-center justify-between border-t pt-3">
+            <span className="text-sm text-muted-foreground">
+              Saldo akhir bulan
+            </span>
+            <span className="text-sm font-semibold">
+              {formatRupiah(closingBalance)}
             </span>
           </div>
         </CardContent>

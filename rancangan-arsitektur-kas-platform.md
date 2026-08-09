@@ -280,7 +280,7 @@ kaskita/
 │   │       ├── layout.tsx              # header (logo, nama org, org switcher, theme picker, logout)
 │   │       │                           # + DesktopNav (md+) + BottomNav (mobile); cek membership → 403
 │   │       ├── loading.tsx             # skeleton loading saat pindah menu (Suspense)
-│   │       ├── dashboard/page.tsx      # ringkasan saldo, bulan berjalan, transaksi terbaru
+│   │       ├── dashboard/page.tsx      # ringkasan saldo saat ini, bulan berjalan (saldo awal/akhir), transaksi terbaru
 │   │       ├── transactions/page.tsx   # list + filter + form dialog
 │   │       ├── categories/page.tsx     # kelola kategori (dialog)
 │   │       ├── reports/page.tsx        # laporan bulanan (filter bulan/tahun + per kategori)
