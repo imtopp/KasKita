@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { DateInput } from "@/components/date-input";
 import {
   Dialog,
   DialogClose,
@@ -14,7 +15,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -23,6 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 import { TransactionFormDialog } from "@/components/transaction-form-dialog";
 import { createClient } from "@/lib/supabase/client";
 import type { CategoryOption, TransactionRow } from "@/lib/types";
@@ -58,6 +59,7 @@ export function TransactionsView({
   const pathname = usePathname();
   const supabase = createClient();
 
+  const [isPending, startTransition] = useTransition();
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<TransactionRow | null>(null);
   const [deleting, setDeleting] = useState<TransactionRow | null>(null);
@@ -81,7 +83,10 @@ export function TransactionsView({
       if (value) params.set(key, value);
     }
     const qs = params.toString();
-    router.push(qs ? `${pathname}?${qs}` : pathname);
+    const url = qs ? `${pathname}?${qs}` : pathname;
+    startTransition(() => {
+      router.push(url);
+    });
   }
 
   function setFilter(key: keyof Filters, value: string | null) {
@@ -114,7 +119,8 @@ export function TransactionsView({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" aria-busy={isPending}>
+      {isPending && <span className="sr-only">Memuat...</span>}
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-xl font-bold">Transaksi</h1>
         {canManage && (
@@ -193,12 +199,10 @@ export function TransactionsView({
           >
             Dari tanggal
           </Label>
-          <Input
+          <DateInput
             id="filterFrom"
-            type="date"
             value={filters.from ?? ""}
             onChange={(e) => setFilter("from", e.target.value || null)}
-            className="h-11"
           />
         </div>
         <div className="space-y-1.5">
@@ -208,17 +212,17 @@ export function TransactionsView({
           >
             Sampai tanggal
           </Label>
-          <Input
+          <DateInput
             id="filterTo"
-            type="date"
             value={filters.to ?? ""}
             onChange={(e) => setFilter("to", e.target.value || null)}
-            className="h-11"
           />
         </div>
       </div>
 
-      {transactions.length === 0 ? (
+      {isPending ? (
+        <TransactionListSkeleton />
+      ) : transactions.length === 0 ? (
         <div className="rounded-xl border border-dashed px-4 py-10 text-center text-sm text-muted-foreground">
           Belum ada transaksi.
         </div>
@@ -286,7 +290,7 @@ export function TransactionsView({
         </ul>
       )}
 
-      {totalPages > 1 && (
+      {!isPending && totalPages > 1 && (
         <div className="flex items-center justify-between gap-2">
           <Button
             variant="outline"
@@ -357,5 +361,23 @@ export function TransactionsView({
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+function TransactionListSkeleton() {
+  return (
+    <ul className="space-y-3" aria-hidden>
+      {Array.from({ length: 4 }).map((_, index) => (
+        <li key={index} className="rounded-xl border bg-card p-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0 space-y-2">
+              <Skeleton className="h-4 w-28" />
+              <Skeleton className="h-3 w-44" />
+            </div>
+            <Skeleton className="h-5 w-24" />
+          </div>
+        </li>
+      ))}
+    </ul>
   );
 }

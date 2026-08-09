@@ -305,6 +305,7 @@ kaskita/
 │   ├── brand-logo.tsx                  # logo dari public/logo.png
 │   ├── theme-picker.tsx                # dropdown 5 tema (simpan ke user_metadata)
 │   ├── theme-setter.tsx                # sinkron data-theme dari server ke <html>
+│   ├── date-input.tsx                  # input tanggal + hint "dd/mm/yyyy" (placeholder native tak muncul di HP)
 │   ├── transactions-view.tsx / transaction-form-dialog.tsx
 │   ├── categories-view.tsx / category-form-dialog.tsx
 │   ├── reports-view.tsx
@@ -320,8 +321,9 @@ kaskita/
 │   ├── types.ts                        # TypeScript types + zod schema dari DB
 │   ├── reports-data.ts                 # agregasi laporan bulanan bersama (summarizeMonth) — dipakai page & API route
 │   ├── pdf/                            # generator PDF laporan (server-side, pdfmake 0.3)
-│   │   ├── fonts.ts                    # register font Roboto (base64 dari pdfmake vfs_fonts) ke virtualfs + setFonts
-│   │   └── report.ts                   # docDefinition laporan + generateReportPdf() → Buffer
+│   │   ├── logo.png                    # copy logo brand (dibaca + di-base64; di-trace Turbopack ke bundle server)
+│   │   ├── fonts.ts                    # register font Roboto (base64 dari pdfmake vfs_fonts) ke virtualfs + setFonts + LOGO_DATA_URL
+│   │   └── report.ts                   # docDefinition laporan (header logo + ringkasan + tabel) + generateReportPdf() → Buffer
 │   ├── utils.ts / api-helpers.ts / auth-errors.ts
 ├── proxy.ts                            # Next 16: pengganti middleware.ts — proteksi route, refresh session
 └── supabase/

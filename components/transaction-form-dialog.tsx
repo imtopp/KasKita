@@ -6,6 +6,7 @@ import { useForm } from "react-hook-form";
 import { Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { DateInput } from "@/components/date-input";
 import {
   Dialog,
   DialogClose,
@@ -100,6 +101,7 @@ export function TransactionFormDialog({
 
   const type = watch("type");
   const categoryId = watch("category_id");
+  const transactionDate = watch("transaction_date");
   const typeCategories = categories.filter((c) => c.type === type);
 
   useEffect(() => {
@@ -270,10 +272,9 @@ export function TransactionFormDialog({
           </div>
           <div className="space-y-2">
             <Label htmlFor="txDate">Tanggal</Label>
-            <Input
+            <DateInput
               id="txDate"
-              type="date"
-              className="h-11"
+              value={transactionDate}
               aria-invalid={!!errors.transaction_date}
               {...register("transaction_date")}
             />

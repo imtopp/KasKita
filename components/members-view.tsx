@@ -23,6 +23,7 @@ import {
 import { CreateMemberDialog } from "@/components/create-member-dialog";
 import { InviteMemberDialog } from "@/components/invite-member-dialog";
 import { MemberManageDialog } from "@/components/member-manage-dialog";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { MemberRow } from "@/lib/types";
 
 const ROLE_LABELS: Record<MemberRow["role"], string> = {
@@ -57,6 +58,7 @@ export function MembersView({
   }
 
   async function loadMembers() {
+    setLoading(true);
     const result = await fetchMembers();
     if (!result.ok) {
       setError(result.error ?? "Gagal memuat daftar anggota.");
@@ -125,7 +127,31 @@ export function MembersView({
   }
 
   if (loading) {
-    return <p className="text-sm text-muted-foreground">Memuat anggota...</p>;
+    return (
+      <div className="space-y-4" aria-busy="true">
+        <span className="sr-only">Memuat...</span>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <Skeleton className="h-7 w-28" />
+          <div className="flex shrink-0 gap-2">
+            <Skeleton className="h-11 w-36" />
+            <Skeleton className="h-11 w-32" />
+          </div>
+        </div>
+        <ul className="space-y-2" aria-hidden>
+          {Array.from({ length: 4 }).map((_, index) => (
+            <li key={index} className="rounded-xl border bg-card p-4">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="min-w-0 space-y-2">
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-3 w-44" />
+                </div>
+                <Skeleton className="h-11 w-28" />
+              </div>
+            </li>
+          ))}
+        </ul>
+      </div>
+    );
   }
 
   return (

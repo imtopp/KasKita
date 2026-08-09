@@ -5,6 +5,7 @@ import type {
 } from "pdfmake/interfaces";
 
 import "./fonts";
+import { LOGO_DATA_URL } from "./fonts";
 import type { CategoryBreakdown, MonthTotals } from "@/lib/types";
 import {
   MONTH_NAMES,
@@ -106,11 +107,23 @@ export async function generateReportPdf(params: {
       title: `Laporan Kas ${orgName} - ${periodLabel}`,
       author: "KasKita",
     },
+    images: {
+      logo: LOGO_DATA_URL,
+    },
     content: [
-      { text: "Laporan Kas", style: "title" },
-      { text: orgName, style: "orgName" },
-      { text: periodLabel, style: "period" },
-      { text: `Dibuat ${formatDateID(todayISO())}`, style: "muted" },
+      {
+        columns: [
+          { image: "logo", width: 64, height: 64, margin: [0, 0, 12, 0] },
+          {
+            stack: [
+              { text: "Laporan Kas", style: "title" },
+              { text: orgName, style: "orgName" },
+              { text: periodLabel, style: "period" },
+              { text: `Dibuat ${formatDateID(todayISO())}`, style: "muted" },
+            ],
+          },
+        ],
+      },
 
       { text: "Ringkasan", style: "section" },
       {

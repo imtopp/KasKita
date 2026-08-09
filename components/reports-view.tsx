@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Download, Loader2 } from "lucide-react";
 
@@ -18,6 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { CategoryBreakdown, MonthTotals } from "@/lib/types";
 import { MONTH_NAMES, formatRupiah } from "@/lib/utils";
 
@@ -42,6 +43,7 @@ export function ReportsView({
   const pathname = usePathname();
   const currentYear = new Date().getFullYear();
 
+  const [isPending, startTransition] = useTransition();
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
 
@@ -52,7 +54,10 @@ export function ReportsView({
     for (const [key, value] of Object.entries(updates)) {
       params.set(key, value);
     }
-    router.push(`${pathname}?${params.toString()}`);
+    const url = `${pathname}?${params.toString()}`;
+    startTransition(() => {
+      router.push(url);
+    });
   }
 
   async function exportPdf() {
@@ -100,7 +105,8 @@ export function ReportsView({
   );
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" aria-busy={isPending}>
+      {isPending && <span className="sr-only">Memuat...</span>}
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-xl font-bold">Laporan</h1>
         <div className="flex flex-wrap items-center gap-2">
@@ -166,12 +172,16 @@ export function ReportsView({
         </div>
       )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">
-            {MONTH_NAMES[month - 1]} {year}
-          </CardTitle>
-        </CardHeader>
+      {isPending ? (
+        <ReportsSkeleton />
+      ) : (
+        <>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">
+                {MONTH_NAMES[month - 1]} {year}
+              </CardTitle>
+            </CardHeader>
         <CardContent className="space-y-3">
           <div className="flex items-center justify-between">
             <span className="text-sm text-muted-foreground">
@@ -249,6 +259,38 @@ export function ReportsView({
               </div>
             ))
           )}
+        </CardContent>
+      </Card>
+        </>
+      )}
+    </div>
+  );
+}
+
+function ReportsSkeleton() {
+  return (
+    <div className="space-y-4" aria-hidden>
+      <Card>
+        <CardHeader>
+          <Skeleton className="h-4 w-32" />
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {Array.from({ length: 4 }).map((_, index) => (
+            <div key={index} className="flex items-center justify-between">
+              <Skeleton className="h-4 w-32" />
+              <Skeleton className="h-4 w-24" />
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
+          <Skeleton className="h-4 w-36" />
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-2/3" />
         </CardContent>
       </Card>
     </div>
