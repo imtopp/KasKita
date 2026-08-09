@@ -86,7 +86,7 @@ function LoginForm() {
         <CardDescription>Catat dan pantau kas organisasimu.</CardDescription>
       </CardHeader>
       <form onSubmit={onSubmit} noValidate>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-4 pb-2">
           {serverError && (
             <div className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
               {serverError}
@@ -124,7 +124,7 @@ function LoginForm() {
             )}
           </div>
         </CardContent>
-        <CardFooter className="flex-col items-stretch gap-4">
+        <CardFooter className="flex-col items-stretch gap-4 pt-8">
           <Button
             type="submit"
             disabled={isSubmitting || redirecting}

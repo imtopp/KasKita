@@ -35,6 +35,7 @@ function UpdatePasswordForm() {
   const forced = searchParams.get("forced") === "1";
   const supabase = createClient();
   const [serverError, setServerError] = useState<string | null>(null);
+  const [redirecting, setRedirecting] = useState(false);
 
   const {
     register,
@@ -81,6 +82,7 @@ function UpdatePasswordForm() {
       }
     }
 
+    setRedirecting(true);
     router.push("/");
     router.refresh();
   });
@@ -138,13 +140,17 @@ function UpdatePasswordForm() {
         <div className="px-(--card-spacing) pb-(--card-spacing)">
           <Button
             type="submit"
-            disabled={isSubmitting}
+            disabled={isSubmitting || redirecting}
             className="h-11 w-full text-base"
           >
-            {isSubmitting && (
-              <Loader2 className="size-4 animate-spin" aria-hidden />
+            {isSubmitting || redirecting ? (
+              <>
+                <Loader2 className="size-4 animate-spin" aria-hidden />
+                Menyimpan...
+              </>
+            ) : (
+              "Simpan password baru"
             )}
-            {isSubmitting ? "Menyimpan..." : "Simpan password baru"}
           </Button>
         </div>
       </form>

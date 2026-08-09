@@ -19,6 +19,7 @@ export function CreateOrganizationForm() {
   const router = useRouter();
   const supabase = createClient();
   const [serverError, setServerError] = useState<string | null>(null);
+  const [redirecting, setRedirecting] = useState(false);
   const slugManualEdit = useRef(false);
 
   const {
@@ -99,6 +100,7 @@ export function CreateOrganizationForm() {
       return;
     }
 
+    setRedirecting(true);
     router.push(`/org/${parsed.data.slug}/dashboard`);
     router.refresh();
   });
@@ -149,13 +151,17 @@ export function CreateOrganizationForm() {
       </div>
       <Button
         type="submit"
-        disabled={isSubmitting}
+        disabled={isSubmitting || redirecting}
         className="h-11 w-full text-base"
       >
-        {isSubmitting && (
-          <Loader2 className="size-4 animate-spin" aria-hidden />
+        {isSubmitting || redirecting ? (
+          <>
+            <Loader2 className="size-4 animate-spin" aria-hidden />
+            Membuat...
+          </>
+        ) : (
+          "Buat organisasi"
         )}
-        {isSubmitting ? "Membuat..." : "Buat organisasi"}
       </Button>
     </form>
   );
