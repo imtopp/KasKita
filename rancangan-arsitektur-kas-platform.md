@@ -331,7 +331,7 @@ Karena target pengguna (bendahara RT, ibu-ibu PKK, dll) kemungkinan besar akses 
 
 ### Prinsip UI
 - Layout mobile-first: desain dari lebar 375px dulu, baru scale up ke tablet/desktop pakai Tailwind breakpoint (`sm:`, `md:`, `lg:`)
-- **Bottom navigation bar di mobile** (bukan sidebar) — tab: Dashboard, Transaksi, Kategori, Laporan, Anggota, Pengaturan. Di desktop (`md+`), nav yang sama tampil sebagai **baris kedua di header** (`DesktopNav`)
+- **Bottom navigation bar di mobile** (bukan sidebar) — tab: Dashboard, Transaksi, Kategori, Laporan, Anggota, Pengaturan, **Keluar**. Di desktop (`md+`), nav yang sama tampil sebagai **baris kedua di header** (`DesktopNav`). Bottom nav fixed di bawah: konten `<main>` wajib punya padding bawah `pb-[calc(5rem+env(safe-area-inset-bottom))]` (desktop `md:pb-6`) supaya card/tombol terakhir tidak tertutup; nav sendiri pakai `pb-[env(safe-area-inset-bottom)]` agar tidak tertutup home indicator iPhone
 - **Tema per-akun**: 5 tema (`data-theme` = `klasik`, `kawaii`, `ocean`, `forest`, `sunrise`) didefinisikan sebagai CSS variables di `app/globals.css`; pilihan user disimpan di `auth.users.user_metadata.theme` dan disinkronkan ke `<html data-theme>` via `ThemeSetter` (dari server) / `ThemePicker` (saat user ganti); head script anti-flash membaca localStorage
 - Form input besar & mudah di-tap (minimum touch target 44x44px)
 - Angka nominal pakai keyboard numerik otomatis (`inputMode="numeric"`)
@@ -340,7 +340,9 @@ Karena target pengguna (bendahara RT, ibu-ibu PKK, dll) kemungkinan besar akses 
 - **Feedback loading**: semua aksi menampilkan indikator — spinner tombol (`Loader2` + `disabled`), skeleton konten (`loading.tsx`), spinner di link nav (`useLinkStatus`) — supaya tidak ada jeda tanpa tanda; tombol login/register bertahan loading sampai halaman tujuan siap
 
 ### PWA
-Sudah terpasang: `manifest` (Next.js) + service worker dasar (`public/sw.js`) + ikon 192/512 — bisa di-"Add to Home Screen". Tidak perlu publish ke Play Store/App Store; tetap gratis di Vercel.
+Sudah terpasang: `manifest` (Next.js) + service worker (`public/sw.js`) + ikon 192/512 — bisa di-"Add to Home Screen". Tidak perlu publish ke Play Store/App Store; tetap gratis di Vercel.
+
+**Strategi cache SW (penting, jangan diubah tanpa alasan kuat):** hanya aset statis ber-hash (`/_next/static/`) yang di-cache-first; request navigasi network-first (fallback ke cache offline); request **data/API/RSC HARUS network-only** (jangan cache-first) — pernah ada bug data basi (anggota/kategori tak muncul setelah refresh) karena semua GET di-cache. GET API yang mengembalikan data wajib set header `Cache-Control: no-store`.
 
 ---
 

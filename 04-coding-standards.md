@@ -22,6 +22,7 @@ Dokumen ini untuk dipegang AI coding assistant supaya hasil kerja konsisten wala
 - Untuk operasi CRUD standar (transaksi, kategori) → langsung pakai Supabase client, TIDAK perlu bikin API route terpisah
 - Bikin API route (`app/api/...`) HANYA untuk: kirim email undangan, generate laporan/PDF, atau operasi yang butuh `service_role` key
 - `service_role` key HANYA boleh dipakai di server-side code (API routes, Server Actions) — jangan pernah di komponen yang punya `'use client'`
+- **Data harus selalu fresh**: di service worker `public/sw.js`, request data/API/RSC HARUS network-only (pernah ada bug data basi karena cache-first). Cache-first HANYA untuk aset statis ber-hash (`/_next/static/`). GET API yang mengembalikan data wajib set `Cache-Control: no-store`.
 
 ## State Management
 - Organisasi aktif disimpan via URL param (`/org/[slug]/...`), bukan global state terpisah yang bisa out-of-sync dengan URL
@@ -48,6 +49,7 @@ Dokumen ini untuk dipegang AI coding assistant supaya hasil kerja konsisten wala
 ## Mobile-First
 - Semua komponen baru HARUS di-render dan dicek dulu di lebar 375px sebelum dianggap selesai
 - Gunakan Tailwind breakpoint mobile-first: style default = mobile, tambahkan `sm:`/`md:`/`lg:` untuk layar lebih besar — jangan sebaliknya (desktop-first lalu override ke mobile)
+- Bottom nav mobile fixed di bawah: konten `<main>` wajib punya padding bawah `pb-[calc(5rem+env(safe-area-inset-bottom))]` (desktop `md:pb-6`) supaya card/tombol terakhir tidak tertutup nav; nav sendiri pakai `pb-[env(safe-area-inset-bottom)]` agar tidak tertutup home indicator iPhone
 
 ## Git & Commit
 - Satu commit = satu perubahan logis (jangan gabung "tambah fitur X" dengan "fix bug Y" dalam satu commit)

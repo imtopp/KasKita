@@ -27,6 +27,7 @@ Next.js **App Router** + TypeScript + Tailwind (satu-satunya cara styling) + sha
 - CRUD standar langsung via Supabase client. Bikin API route (`app/api/*`) HANYA untuk: undangan email, generate laporan/PDF, atau operasi yang butuh `service_role` key.
 - `service_role` key HANYA di server-side (API route / Server Action). **Tidak pernah** di komponen `'use client'`.
 - Setiap `await supabase...` wajib cek `error`; jangan asumsikan sukses. Tampilkan pesan error yang manusiawi, bukan raw error object.
+- Data harus selalu fresh: di service worker `public/sw.js`, request data/API/RSC HARUS network-only (jangan cache-first — pernah menyebabkan data basi: anggota/kategori tak muncul setelah refresh). Cache-first HANYA untuk aset statis ber-hash (`/_next/static/`). GET API data juga wajib `Cache-Control: no-store`.
 - Server Component sebagai default; `'use client'` hanya kalau butuh interaktivitas (form, state, event handler).
 - Supabase client: Server Component → `lib/supabase/server.ts`, Client Component → `lib/supabase/client.ts`. Jangan tertukar.
 - Tema di-set via atribut `data-theme` pada `<html>`; 5 tema terdaftar di `components/theme-picker.tsx` (`THEMES`) + whitelist head script `app/layout.tsx`. Menambah tema = ubah 3 tempat: blok CSS `[data-theme=...]` di `app/globals.css`, array `THEMES`, dan whitelist script.
@@ -34,6 +35,7 @@ Next.js **App Router** + TypeScript + Tailwind (satu-satunya cara styling) + sha
 - Form: react-hook-form + zod; definisi skema zod SEKALI di `lib/types.ts` (atau file schema terpisah), dipakai ulang di form & API — jangan duplikasi.
 - Loading state: semua tombol aksi wajib spinner + `disabled`; indikator bertahan sampai proses selesai (mis. tombol login/register tetap loading sampai halaman tujuan siap). Saat pindah menu: skeleton konten via `loading.tsx` (`components/ui/skeleton.tsx`) + spinner link via `useLinkStatus` (`components/nav-link-icon.tsx`) — ikuti pola ini.
 - Mobile-first: cek semua halaman di viewport 375px; touch target minimal 44x44px; `inputMode="numeric"` untuk nominal; nominal format Rupiah `Rp 1.500.000`. Default style = mobile, baru `sm:`/`md:`/`lg:` untuk layar besar.
+- Bottom nav (mobile) fixed di bawah: konten `<main>` wajib punya padding bawah `pb-[calc(5rem+env(safe-area-inset-bottom))]` (desktop `md:pb-6`) supaya card/tombol terakhir tidak tertutup nav; nav sendiri pakai `pb-[env(safe-area-inset-bottom)]` agar tidak tertutup home indicator iPhone.
 - File komponen `kebab-case.tsx`, nama komponen `PascalCase`.
 
 ## Env vars
