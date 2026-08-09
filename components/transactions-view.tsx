@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -60,6 +61,7 @@ export function TransactionsView({
   const [editing, setEditing] = useState<TransactionRow | null>(null);
   const [deleting, setDeleting] = useState<TransactionRow | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
 
   function applyParams(
     updates: Record<string, string | null>,
@@ -90,12 +92,14 @@ export function TransactionsView({
   }
 
   async function confirmDelete() {
-    if (!deleting) return;
+    if (!deleting || busy) return;
+    setBusy(true);
     setDeleteError(null);
     const { error } = await supabase
       .from("transactions")
       .delete()
       .eq("id", deleting.id);
+    setBusy(false);
     if (error) {
       setDeleteError(
         /row-level security|permission denied/i.test(error.message)
@@ -310,9 +314,17 @@ export function TransactionsView({
               type="button"
               variant="destructive"
               className="h-11 text-base"
+              disabled={busy}
               onClick={confirmDelete}
             >
-              Hapus
+              {busy ? (
+                <>
+                  <Loader2 className="size-4 animate-spin" aria-hidden />
+                  Menghapus...
+                </>
+              ) : (
+                "Hapus"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

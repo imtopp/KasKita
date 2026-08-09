@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -87,14 +88,17 @@ export function CategoriesView({
   const [editing, setEditing] = useState<CategoryRow | null>(null);
   const [deleting, setDeleting] = useState<CategoryRow | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
 
   async function confirmDelete() {
-    if (!deleting) return;
+    if (!deleting || busy) return;
+    setBusy(true);
     setDeleteError(null);
     const { error } = await supabase
       .from("categories")
       .update({ is_deleted: true })
       .eq("id", deleting.id);
+    setBusy(false);
     if (error) {
       setDeleteError(
         /row-level security|permission denied/i.test(error.message)
@@ -194,9 +198,17 @@ export function CategoriesView({
               type="button"
               variant="destructive"
               className="h-11 text-base"
+              disabled={busy}
               onClick={confirmDelete}
             >
-              Hapus
+              {busy ? (
+                <>
+                  <Loader2 className="size-4 animate-spin" aria-hidden />
+                  Menghapus...
+                </>
+              ) : (
+                "Hapus"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
