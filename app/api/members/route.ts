@@ -188,6 +188,31 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, active });
   }
 
+  if (body.revokeSessions === true) {
+    const userId = typeof body.userId === "string" ? body.userId : "";
+    if (!userId) {
+      return jsonError("Data tidak valid.", 400);
+    }
+
+    const target = await findManageableMember(
+      admin,
+      orgId,
+      userId,
+      auth.user.id,
+    );
+    if (target.error) return target.error;
+
+    const { error } = await admin
+      .from("auth.sessions")
+      .delete()
+      .eq("user_id", userId);
+    if (error) {
+      return jsonError("Gagal memutuskan sesi. Coba lagi.", 500);
+    }
+
+    return NextResponse.json({ success: true });
+  }
+
   if (body.existing === true) {
     const parsed = addExistingMemberSchema.safeParse(body);
     if (!parsed.success) {

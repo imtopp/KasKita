@@ -177,6 +177,7 @@ Fitur berikut sudah dikerjakan atas permintaan eksplisit user dan menjadi bagian
   - [x] Atur ulang password sementara — anggota diminta ganti password saat login berikutnya (sama seperti akun yang baru didaftarkan)
   - [x] Ganti email anggota (jika dia lupa akses email / minta tolong diganti)
   - [x] Nonaktifkan / aktifkan kembali akun anggota (anggota tidak bisa login selama nonaktif)
+  - [x] Putuskan semua sesi anggota (kick session) — semua refresh token langsung tidak berlaku (access token lama kedaluwarsa otomatis maks. ±1 jam); dipakai untuk prosedur akun kena hack bersama atur ulang password
   - [x] Pesan error di halaman ganti password dibuat jelas saat user memakai password yang sama dengan password sementara ("password baru tidak boleh sama dengan password yang sedang dipakai") — bukan sekadar "gagal" generik
 - **Saldo kumulatif**: dashboard bulan berjalan & laporan bulanan menampilkan saldo awal/akhir yang menyambung antar bulan (bukan reset ke nol).
 

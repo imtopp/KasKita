@@ -2,7 +2,14 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
-import { KeyRound, Loader2, Mail, ShieldCheck, ShieldX } from "lucide-react";
+import {
+  KeyRound,
+  Loader2,
+  LogOut,
+  Mail,
+  ShieldCheck,
+  ShieldX,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -50,6 +57,8 @@ export function MemberManageDialog({
   const [busyPassword, setBusyPassword] = useState(false);
   const [busyActive, setBusyActive] = useState(false);
   const [confirmActive, setConfirmActive] = useState(false);
+  const [busySessions, setBusySessions] = useState(false);
+  const [confirmSessions, setConfirmSessions] = useState(false);
   const prevOpen = useRef(false);
 
   const emailForm = useForm<ChangeMemberEmailForm>({
@@ -67,6 +76,7 @@ export function MemberManageDialog({
       setError(null);
       setTempPassword(null);
       setConfirmActive(false);
+      setConfirmSessions(false);
       emailForm.reset({ userId: member.user_id, email: member.email });
       passwordForm.reset({ userId: member.user_id, password: "" });
     }
@@ -160,6 +170,32 @@ export function MemberManageDialog({
         : `Akun ${member.name ?? member.email} diaktifkan kembali.`,
     );
     onChanged();
+  }
+
+  async function revokeSessions() {
+    if (!member || busySessions) return;
+    setBusySessions(true);
+    setError(null);
+    setNotice(null);
+    const res = await fetch("/api/members", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        orgId,
+        revokeSessions: true,
+        userId: member.user_id,
+      }),
+    });
+    const data = await res.json().catch(() => ({}));
+    setBusySessions(false);
+    if (!res.ok) {
+      setError(data.error ?? "Gagal memutuskan sesi.");
+      return;
+    }
+    setConfirmSessions(false);
+    setNotice(
+      `Semua sesi ${member.name ?? member.email} diputus. Dia harus login ulang.`,
+    );
   }
 
   if (!member) return null;
@@ -369,6 +405,72 @@ export function MemberManageDialog({
                   }}
                 >
                   {active ? "Nonaktifkan akun" : "Aktifkan kembali"}
+                </Button>
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-3 rounded-xl border p-4">
+            <p className="flex items-center gap-2 text-sm font-semibold">
+              <LogOut className="size-4" aria-hidden />
+              Putuskan semua sesi
+            </p>
+            {confirmSessions ? (
+              <div className="space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  Keluarkan {member.name ?? member.email} dari semua perangkat
+                  (HP, laptop, dll)? Dia harus login ulang. Cocok untuk
+                  prosedur akun kena hack — kombinasikan dengan atur ulang
+                  password.
+                </p>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-11 flex-1"
+                    disabled={busySessions}
+                    onClick={() => setConfirmSessions(false)}
+                  >
+                    Batal
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    className="h-11 flex-1"
+                    disabled={busySessions}
+                    onClick={revokeSessions}
+                  >
+                    {busySessions && (
+                      <Loader2
+                        className="size-4 animate-spin"
+                        aria-hidden
+                      />
+                    )}
+                    {busySessions
+                      ? "Memutuskan..."
+                      : "Putuskan semua sesi"}
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm text-muted-foreground">
+                    Keluarkan dari semua perangkat. Refresh token langsung
+                    tidak berlaku; access token lama kedaluwarsa otomatis
+                    (maks. ±1 jam).
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-11 shrink-0"
+                  onClick={() => {
+                    setConfirmSessions(true);
+                    setError(null);
+                  }}
+                >
+                  Putuskan sesi
                 </Button>
               </div>
             )}
