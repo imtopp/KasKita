@@ -44,9 +44,20 @@ Next.js **App Router** + TypeScript + Tailwind (satu-satunya cara styling) + sha
 NEXT_PUBLIC_SUPABASE_URL=...
 NEXT_PUBLIC_SUPABASE_ANON_KEY=...
 SUPABASE_SERVICE_ROLE_KEY=...   # server-only
+SUPABASE_ACCESS_TOKEN=...       # opsional, untuk tooling: Management API / supabase CLI (bukan dipakai aplikasi)
 ```
 
 Salin `.env.local.example` → `.env.local`; jangan commit `.env.local` atau kredensial apa pun.
+
+## Menjalankan migration ke Supabase (dari lokal)
+
+Pakai `scripts/run-sql.ps1` — membaca `SUPABASE_ACCESS_TOKEN` dari `.env.local` lalu eksekusi via Management API (`POST /v1/projects/{ref}/database/query`), SQL dibungkus `BEGIN/COMMIT` jadi atomic:
+
+```
+powershell -ExecutionPolicy Bypass -File scripts\run-sql.ps1 supabase\migrations\<file>.sql
+```
+
+Exit code 0 + output `HTTP 201` = sukses. Contoh yang sudah dijalankan lewat cara ini: `supabase/migrations/202608090001_co_owner_role_and_org_creation.sql`.
 
 ## DB & migrasi
 
