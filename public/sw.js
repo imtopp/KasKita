@@ -1,4 +1,4 @@
-const CACHE = "kaskita-v1";
+const CACHE = "kaskita-v2";
 const PRECACHE = [
   "/",
   "/manifest.webmanifest",
@@ -33,6 +33,26 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
 
+  // Aset statis ber-hash (JS/CSS/next data): aman di-cache-first.
+  if (url.pathname.startsWith("/_next/static/")) {
+    event.respondWith(
+      caches.match(request).then(
+        (cached) =>
+          cached ||
+          fetch(request).then((response) => {
+            if (response.ok) {
+              const copy = response.clone();
+              caches.open(CACHE).then((cache) => cache.put(request, copy));
+            }
+            return response;
+          }),
+      ),
+    );
+    return;
+  }
+
+  // Navigasi halaman: selalu ambil dari jaringan; fallback ke cache hanya
+  // kalau offline (shell halaman terakhir yang dikunjungi).
   if (request.mode === "navigate") {
     event.respondWith(
       fetch(request)
@@ -41,22 +61,16 @@ self.addEventListener("fetch", (event) => {
           caches.open(CACHE).then((cache) => cache.put(request, copy));
           return response;
         })
-        .catch(() => caches.match("/")),
+        .catch(() =>
+          caches
+            .match(request)
+            .then((cached) => cached || caches.match("/")),
+        ),
     );
     return;
   }
 
-  event.respondWith(
-    caches.match(request).then(
-      (cached) =>
-        cached ||
-        fetch(request).then((response) => {
-          if (response.ok) {
-            const copy = response.clone();
-            caches.open(CACHE).then((cache) => cache.put(request, copy));
-          }
-          return response;
-        }),
-    ),
-  );
+  // API / data / RSC: SELALU dari jaringan, tidak pernah di-cache —
+  // mencegah data basi (list anggota/kategori tidak muncul setelah refresh).
+  event.respondWith(fetch(request));
 });

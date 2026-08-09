@@ -36,13 +36,16 @@ export async function GET(request: NextRequest) {
   if (found.error) return found.error;
 
   const info = await orgInfo(admin, found.invitation.organization_id);
-  return NextResponse.json({
-    invitation: {
-      organizationName: info.name,
-      organizationSlug: info.slug,
-      role: found.invitation.role,
+  return NextResponse.json(
+    {
+      invitation: {
+        organizationName: info.name,
+        organizationSlug: info.slug,
+        role: found.invitation.role,
+      },
     },
-  });
+    { headers: { "Cache-Control": "no-store" } },
+  );
 }
 
 export async function POST(request: NextRequest) {

@@ -51,7 +51,10 @@ export async function GET(request: NextRequest) {
     });
   }
 
-  return NextResponse.json({ members: result });
+  return NextResponse.json(
+    { members: result },
+    { headers: { "Cache-Control": "no-store" } },
+  );
 }
 
 export async function POST(request: NextRequest) {
