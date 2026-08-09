@@ -192,7 +192,7 @@ export function TransactionsView({
             </SelectContent>
           </Select>
         </div>
-        <div className="min-w-0 space-y-1.5">
+        <div className="col-span-2 min-w-0 space-y-1.5 md:col-span-1">
           <Label
             htmlFor="filterFrom"
             className="text-xs font-medium text-muted-foreground"
@@ -205,7 +205,7 @@ export function TransactionsView({
             onChange={(e) => setFilter("from", e.target.value || null)}
           />
         </div>
-        <div className="min-w-0 space-y-1.5">
+        <div className="col-span-2 min-w-0 space-y-1.5 md:col-span-1">
           <Label
             htmlFor="filterTo"
             className="text-xs font-medium text-muted-foreground"
