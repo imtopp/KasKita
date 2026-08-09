@@ -71,7 +71,7 @@ export default async function OrgLayout({
         </div>
         <DesktopNav slug={slug} />
       </header>
-      <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-4 md:py-6">
+      <main className="mx-auto w-full max-w-5xl flex-1 px-4 pt-4 pb-[calc(5rem+env(safe-area-inset-bottom))] md:py-6">
         {children}
       </main>
       <BottomNav slug={slug} />
