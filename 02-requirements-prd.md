@@ -173,6 +173,12 @@ Fitur berikut sudah dikerjakan atas permintaan eksplisit user dan menjadi bagian
 - **PWA installable** (manifest + service worker + ikon 192/512).
 - **Logo brand** KasKita dari file logo user.
 - **Indikator loading**: spinner + `disabled` di semua tombol aksi; tombol login/register tetap loading sampai redirect ke halaman tujuan; saat pindah menu muncul skeleton konten (`loading.tsx`) + spinner di link navigasi (`useLinkStatus`).
+- **Kelola akun anggota oleh owner** (tombol "Kelola" pada tiap anggota bendahara/viewer di halaman Anggota):
+  - [x] Atur ulang password sementara — anggota diminta ganti password saat login berikutnya (sama seperti akun yang baru didaftarkan)
+  - [x] Ganti email anggota (jika dia lupa akses email / minta tolong diganti)
+  - [x] Nonaktifkan / aktifkan kembali akun anggota (anggota tidak bisa login selama nonaktif)
+  - [x] Pesan error di halaman ganti password dibuat jelas saat user memakai password yang sama dengan password sementara ("password baru tidak boleh sama dengan password yang sedang dipakai") — bukan sekadar "gagal" generik
+- **Saldo kumulatif**: dashboard bulan berjalan & laporan bulanan menampilkan saldo awal/akhir yang menyambung antar bulan (bukan reset ke nol).
 
 
 

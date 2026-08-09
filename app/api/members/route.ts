@@ -3,10 +3,48 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient, getRequester, jsonError } from "@/lib/api-helpers";
 import {
   addExistingMemberSchema,
+  changeMemberEmailSchema,
   createMemberSchema,
+  resetMemberPasswordSchema,
 } from "@/lib/types";
 
 const ROLE_VALUES = ["owner", "treasurer", "viewer"] as const;
+
+type AdminClient = ReturnType<typeof createServiceClient>;
+
+async function findManageableMember(
+  admin: AdminClient,
+  orgId: string,
+  userId: string,
+  selfId: string,
+) {
+  if (userId === selfId) {
+    return {
+      error: jsonError(
+        "Tidak bisa melakukan aksi ini pada akunmu sendiri.",
+        400,
+      ),
+    };
+  }
+  const { data: member } = await admin
+    .from("organization_members")
+    .select("role")
+    .eq("organization_id", orgId)
+    .eq("user_id", userId)
+    .single();
+  if (!member) {
+    return { error: jsonError("Anggota tidak ditemukan.", 404) };
+  }
+  if (member.role === "owner") {
+    return {
+      error: jsonError(
+        "Aksi ini hanya bisa dilakukan untuk anggota berperan bendahara/viewer.",
+        400,
+      ),
+    };
+  }
+  return { member };
+}
 
 export async function GET(request: NextRequest) {
   const orgId = request.nextUrl.searchParams.get("orgId");
@@ -48,6 +86,7 @@ export async function GET(request: NextRequest) {
       source: invitedEmails.has((user.email ?? "").toLowerCase())
         ? "email"
         : "manual",
+      banned_until: user.banned_until ?? null,
     });
   }
 
@@ -70,6 +109,84 @@ export async function POST(request: NextRequest) {
   if (!auth.ok) return auth.response;
 
   const admin = createServiceClient();
+
+  if (body.resetPassword === true) {
+    const parsed = resetMemberPasswordSchema.safeParse(body);
+    if (!parsed.success) {
+      return jsonError(parsed.error.issues[0].message, 400);
+    }
+
+    const target = await findManageableMember(
+      admin,
+      orgId,
+      parsed.data.userId,
+      auth.user.id,
+    );
+    if (target.error) return target.error;
+
+    const { error } = await admin.auth.admin.updateUserById(parsed.data.userId, {
+      password: parsed.data.password,
+      user_metadata: { must_change_password: true },
+    });
+    if (error) {
+      return jsonError("Gagal mengatur ulang password. Coba lagi.", 500);
+    }
+
+    return NextResponse.json({ success: true });
+  }
+
+  if (body.changeEmail === true) {
+    const parsed = changeMemberEmailSchema.safeParse(body);
+    if (!parsed.success) {
+      return jsonError(parsed.error.issues[0].message, 400);
+    }
+
+    const target = await findManageableMember(
+      admin,
+      orgId,
+      parsed.data.userId,
+      auth.user.id,
+    );
+    if (target.error) return target.error;
+
+    const { error } = await admin.auth.admin.updateUserById(parsed.data.userId, {
+      email: parsed.data.email.toLowerCase(),
+      email_confirm: true,
+    });
+    if (error) {
+      if (/already registered|already been registered/i.test(error.message)) {
+        return jsonError("Email ini sudah dipakai akun KasKita lain.", 409);
+      }
+      return jsonError("Gagal mengganti email. Coba lagi.", 500);
+    }
+
+    return NextResponse.json({ success: true });
+  }
+
+  if (body.setActive === true) {
+    const userId = typeof body.userId === "string" ? body.userId : "";
+    const active = body.active === true;
+    if (!userId) {
+      return jsonError("Data tidak valid.", 400);
+    }
+
+    const target = await findManageableMember(
+      admin,
+      orgId,
+      userId,
+      auth.user.id,
+    );
+    if (target.error) return target.error;
+
+    const { error } = await admin.auth.admin.updateUserById(userId, {
+      ban_duration: active ? "none" : "876000h",
+    });
+    if (error) {
+      return jsonError("Gagal mengubah status akun. Coba lagi.", 500);
+    }
+
+    return NextResponse.json({ success: true, active });
+  }
 
   if (body.existing === true) {
     const parsed = addExistingMemberSchema.safeParse(body);

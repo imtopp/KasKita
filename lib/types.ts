@@ -144,9 +144,24 @@ export const addExistingMemberSchema = z.object({
   role: z.enum(["treasurer", "viewer"]),
 });
 
+export const resetMemberPasswordSchema = z.object({
+  userId: z.string().min(1, "Data tidak valid."),
+  password: z
+    .string()
+    .min(8, "Password minimal 8 karakter")
+    .max(72, "Password maksimal 72 karakter"),
+});
+
+export const changeMemberEmailSchema = z.object({
+  userId: z.string().min(1, "Data tidak valid."),
+  email: z.string().trim().email("Format email tidak valid"),
+});
+
 export type InviteMemberForm = z.infer<typeof inviteMemberSchema>;
 export type CreateMemberForm = z.infer<typeof createMemberSchema>;
 export type AddExistingMemberForm = z.infer<typeof addExistingMemberSchema>;
+export type ResetMemberPasswordForm = z.infer<typeof resetMemberPasswordSchema>;
+export type ChangeMemberEmailForm = z.infer<typeof changeMemberEmailSchema>;
 
 export type MemberRow = {
   id: string;
@@ -155,4 +170,5 @@ export type MemberRow = {
   email: string;
   name: string | null;
   source: "email" | "manual";
+  banned_until: string | null;
 };

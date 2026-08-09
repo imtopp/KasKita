@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Loader2 } from "lucide-react";
+import { KeyRound, Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/select";
 import { CreateMemberDialog } from "@/components/create-member-dialog";
 import { InviteMemberDialog } from "@/components/invite-member-dialog";
+import { MemberManageDialog } from "@/components/member-manage-dialog";
 import type { MemberRow } from "@/lib/types";
 
 const ROLE_LABELS: Record<MemberRow["role"], string> = {
@@ -45,6 +46,7 @@ export function MembersView({
   const [inviteOpen, setInviteOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [deleting, setDeleting] = useState<MemberRow | null>(null);
+  const [managing, setManaging] = useState<MemberRow | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -171,8 +173,15 @@ export function MembersView({
             >
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="min-w-0 space-y-0.5">
-                  <p className="text-sm font-medium">
-                    {member.name ?? member.email}
+                  <p className="flex flex-wrap items-center gap-1.5 text-sm font-medium">
+                    <span className="truncate">
+                      {member.name ?? member.email}
+                    </span>
+                    {member.banned_until && (
+                      <span className="rounded-full bg-destructive/10 px-2 py-0.5 text-[10px] font-semibold text-destructive">
+                        Nonaktif
+                      </span>
+                    )}
                   </p>
                   {member.name && (
                     <p className="truncate text-xs text-muted-foreground">
@@ -204,6 +213,18 @@ export function MembersView({
                       <SelectItem value="viewer">Viewer</SelectItem>
                     </SelectContent>
                   </Select>
+                  {member.role !== "owner" &&
+                    member.user_id !== currentUserId && (
+                      <Button
+                        variant="outline"
+                        className="h-11 px-3 text-sm"
+                        disabled={busy}
+                        onClick={() => setManaging(member)}
+                      >
+                        <KeyRound className="size-4" aria-hidden />
+                        Kelola
+                      </Button>
+                    )}
                   {member.user_id !== currentUserId && (
                     <Button
                       variant="destructive"
@@ -238,6 +259,15 @@ export function MembersView({
         onOpenChange={setCreateOpen}
         orgId={orgId}
         onCreated={() => {
+          loadMembers();
+        }}
+      />
+      <MemberManageDialog
+        open={!!managing}
+        onOpenChange={(open) => !open && setManaging(null)}
+        orgId={orgId}
+        member={managing}
+        onChanged={() => {
           loadMembers();
         }}
       />

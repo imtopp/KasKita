@@ -61,7 +61,13 @@ function UpdatePasswordForm() {
     });
 
     if (error) {
-      setServerError("Gagal mengubah password. Coba lagi.");
+      if (/different from|same as/i.test(error.message)) {
+        setServerError(
+          "Password baru tidak boleh sama dengan password yang sedang dipakai (password sementara). Pilih password yang berbeda.",
+        );
+      } else {
+        setServerError("Gagal mengubah password. Coba lagi.");
+      }
       return;
     }
 

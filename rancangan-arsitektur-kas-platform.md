@@ -292,7 +292,7 @@ kaskita/
 │   ├── api/                            # HANYA untuk logic ber-privilege (service_role)
 │   │   ├── invitations/route.ts        # undang via email + daftarkan anggota manual
 │   │   ├── invitations/accept/route.ts # validasi token + expires_at
-│   │   └── members/route.ts            # ubah role / hapus anggota
+│   │   └── members/route.ts            # kelola anggota: buat/existing, ubah role, reset password, ganti email, nonaktifkan/aktifkan akun, hapus
 │   ├── layout.tsx                      # font Baloo 2, theme-init script, PWA manifest, theme color
 │   └── page.tsx                        # redirect: login / org pertama / onboarding
 ├── components/
