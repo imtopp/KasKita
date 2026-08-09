@@ -74,7 +74,7 @@ export default async function OrgLayout({
           <div className="ml-auto flex items-center gap-2">
             <OrgSwitcher orgs={orgs ?? []} activeSlug={slug} />
             <ThemePicker userTheme={userTheme} />
-            <LogoutButton className="hidden h-9 px-3 text-sm md:inline-flex" />
+            <LogoutButton className="hidden h-9 w-auto shrink-0 px-3 text-sm md:inline-flex" />
           </div>
         </div>
         <DesktopNav slug={slug} role={role} />

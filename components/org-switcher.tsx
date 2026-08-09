@@ -43,21 +43,23 @@ export function OrgSwitcher({
       }}
     >
       <SelectTrigger
-        className="h-11 max-w-44 data-[size=default]:h-11"
+        className="h-11 max-w-44 data-[size=default]:h-11 sm:max-w-64"
         aria-label="Ganti organisasi"
       >
         <SelectValue placeholder="Pilih organisasi" />
       </SelectTrigger>
-      <SelectContent align="end">
+      <SelectContent align="end" className="min-w-64">
         {orgs.map((org) => (
           <SelectItem key={org.id} value={org.slug}>
-            {org.name}
+            <span className="min-w-0 flex-1 truncate">{org.name}</span>
           </SelectItem>
         ))}
         <SelectSeparator />
         <SelectItem value={CREATE_VALUE}>
           <PlusIcon />
-          Buat organisasi baru
+          <span className="min-w-0 flex-1 truncate">
+            Buat organisasi baru
+          </span>
         </SelectItem>
       </SelectContent>
     </Select>

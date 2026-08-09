@@ -15,6 +15,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -142,53 +143,79 @@ export function TransactionsView({
       </div>
 
       <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
-        <Select
-          value={filters.type ?? ALL}
-          onValueChange={(value: string | null) =>
-            setFilter("type", value === ALL ? null : value)
-          }
-        >
-          <SelectTrigger className="h-11 w-full data-[size=default]:h-11">
-            <SelectValue placeholder="Semua jenis" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={ALL}>Semua jenis</SelectItem>
-            <SelectItem value="income">Pemasukan</SelectItem>
-            <SelectItem value="expense">Pengeluaran</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select
-          value={filters.category ?? ALL}
-          onValueChange={(value: string | null) =>
-            setFilter("category", value === ALL ? null : value)
-          }
-        >
-          <SelectTrigger className="h-11 w-full data-[size=default]:h-11">
-            <SelectValue placeholder="Semua kategori" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={ALL}>Semua kategori</SelectItem>
-            {categories.map((category) => (
-              <SelectItem key={category.id} value={category.id}>
-                {category.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Input
-          type="date"
-          value={filters.from ?? ""}
-          onChange={(e) => setFilter("from", e.target.value || null)}
-          className="h-11"
-          aria-label="Dari tanggal"
-        />
-        <Input
-          type="date"
-          value={filters.to ?? ""}
-          onChange={(e) => setFilter("to", e.target.value || null)}
-          className="h-11"
-          aria-label="Sampai tanggal"
-        />
+        <div className="space-y-1.5">
+          <Label className="text-xs font-medium text-muted-foreground">
+            Jenis
+          </Label>
+          <Select
+            value={filters.type ?? ALL}
+            onValueChange={(value: string | null) =>
+              setFilter("type", value === ALL ? null : value)
+            }
+          >
+            <SelectTrigger className="h-11 w-full data-[size=default]:h-11">
+              <SelectValue placeholder="Semua jenis" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ALL}>Semua jenis</SelectItem>
+              <SelectItem value="income">Pemasukan</SelectItem>
+              <SelectItem value="expense">Pengeluaran</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1.5">
+          <Label className="text-xs font-medium text-muted-foreground">
+            Kategori
+          </Label>
+          <Select
+            value={filters.category ?? ALL}
+            onValueChange={(value: string | null) =>
+              setFilter("category", value === ALL ? null : value)
+            }
+          >
+            <SelectTrigger className="h-11 w-full data-[size=default]:h-11">
+              <SelectValue placeholder="Semua kategori" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ALL}>Semua kategori</SelectItem>
+              {categories.map((category) => (
+                <SelectItem key={category.id} value={category.id}>
+                  {category.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1.5">
+          <Label
+            htmlFor="filterFrom"
+            className="text-xs font-medium text-muted-foreground"
+          >
+            Dari tanggal
+          </Label>
+          <Input
+            id="filterFrom"
+            type="date"
+            value={filters.from ?? ""}
+            onChange={(e) => setFilter("from", e.target.value || null)}
+            className="h-11"
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label
+            htmlFor="filterTo"
+            className="text-xs font-medium text-muted-foreground"
+          >
+            Sampai tanggal
+          </Label>
+          <Input
+            id="filterTo"
+            type="date"
+            value={filters.to ?? ""}
+            onChange={(e) => setFilter("to", e.target.value || null)}
+            className="h-11"
+          />
+        </div>
       </div>
 
       {transactions.length === 0 ? (
@@ -208,7 +235,7 @@ export function TransactionsView({
                     {transaction.categories?.name ?? "Tanpa kategori"}
                   </p>
                   {transaction.description && (
-                    <p className="truncate text-sm text-muted-foreground">
+                    <p className="break-words text-sm text-muted-foreground">
                       {transaction.description}
                     </p>
                   )}
@@ -216,10 +243,10 @@ export function TransactionsView({
                     {formatDateID(transaction.transaction_date)}
                   </p>
                 </div>
-                <div className="flex flex-col items-end gap-2">
+                <div className="flex shrink-0 flex-col items-end gap-2">
                   <p
                     className={cn(
-                      "text-base font-semibold",
+                      "text-base font-semibold whitespace-nowrap",
                       transaction.type === "income"
                         ? "text-emerald-600"
                         : "text-destructive",
