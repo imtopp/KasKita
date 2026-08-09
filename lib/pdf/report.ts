@@ -113,7 +113,7 @@ export async function generateReportPdf(params: {
     content: [
       {
         columns: [
-          { image: "logo", width: 64, height: 64, margin: [0, 8, 16, 0] },
+          { image: "logo", width: 64, height: 64, margin: [0, 3, 0, 0] },
           {
             stack: [
               { text: "Laporan Kas", style: "title" },
@@ -121,6 +121,7 @@ export async function generateReportPdf(params: {
               { text: periodLabel, style: "period" },
               { text: `Dibuat ${formatDateID(todayISO())}`, style: "muted" },
             ],
+            margin: [16, 0, 0, 0],
           },
         ],
       },
