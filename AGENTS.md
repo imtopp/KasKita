@@ -4,7 +4,7 @@ Platform Kas Organisasi (multi-tenant) — Next.js + Supabase. Seluruh keputusan
 
 ## Dokumen sumber (urut prioritas)
 
-- `rancangan-arsitektur-kas-platform.md` — arsitektur, skema DB, RLS, struktur folder, env vars
+- `01-rancangan-arsitektur-kas-platform.md` — arsitektur, skema DB, RLS, struktur folder, env vars
 - `02-requirements-prd.md` — scope fitur + acceptance criteria (jangan tambah fitur di luar ini)
 - `03-database-migration.sql` — source of truth skema DB + RLS + trigger
 - `04-coding-standards.md` — konvensi koding + hal yang dilarang tanpa konfirmasi

@@ -1,6 +1,6 @@
 # PRD — Platform Kas Organisasi (Multi-Tenant)
 
-Dokumen ini melengkapi `rancangan-arsitektur-kas-platform.md`. Berisi definisi "selesai" per fitur supaya AI coding assistant tidak menebak scope sendiri.
+Dokumen ini melengkapi `01-rancangan-arsitektur-kas-platform.md`. Berisi definisi "selesai" per fitur supaya AI coding assistant tidak menebak scope sendiri.
 
 **Aturan umum untuk AI assistant:**
 - Jangan menambah fitur di luar yang tertulis di sini tanpa konfirmasi eksplisit dari user.

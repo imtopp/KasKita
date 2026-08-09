@@ -52,4 +52,4 @@ SUPABASE_ACCESS_TOKEN=...       # opsional, untuk tooling (Management API / scri
 - `components/ui/` — shadcn; `lib/supabase/` — client/server/middleware
 - `proxy.ts` — proteksi route & refresh session (Next 16, pengganti `middleware.ts`)
 
-Dokumen acuan: `rancangan-arsitektur-kas-platform.md`, `02-requirements-prd.md`, `03-database-migration.sql`, `04-coding-standards.md`, `05-task-breakdown.md`, `AGENTS.md`.
+Dokumen acuan: `01-rancangan-arsitektur-kas-platform.md`, `02-requirements-prd.md`, `03-database-migration.sql`, `04-coding-standards.md`, `05-task-breakdown.md`, `AGENTS.md`.
