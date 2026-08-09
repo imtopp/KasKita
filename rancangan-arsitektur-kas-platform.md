@@ -18,7 +18,7 @@ Contoh pemakaian:
 
 ### Fitur MVP (harus ada)
 1. Auth (register, login, logout, reset password)
-2. Buat organisasi baru + undang anggota (bendahara/admin/viewer)
+2. Buat organisasi baru + undang anggota (bendahara/viewer)
 3. Catat transaksi (pemasukan/pengeluaran) dengan kategori, tanggal, nominal, catatan, bukti foto (opsional)
 4. Lihat saldo kas real-time
 5. Riwayat transaksi (filter by tanggal, kategori, jenis)
@@ -29,7 +29,7 @@ Contoh pemakaian:
 > **Status saat ini:** seluruh fitur MVP sudah selesai dan live di production.
 
 ### Fitur lanjutan (fase 2+)
-- Export laporan ke PDF/Excel
+- Export laporan ke Excel (PDF sudah selesai)
 - Approval flow (misal: pengeluaran > nominal tertentu perlu approval ketua)
 - Grafik tren kas (chart)
 - Notifikasi (email/push) saat ada transaksi besar
@@ -148,7 +148,7 @@ create table invitations (
   id uuid primary key default gen_random_uuid(),
   organization_id uuid references organizations(id) on delete cascade not null,
   email text not null,
-  role text not null check (role in ('owner', 'treasurer', 'viewer')),
+  role text not null check (role in ('treasurer', 'viewer')),  -- undangan TIDAK menerima owner/co-owner (role itu diatur via ubah peran di halaman Anggota)
   invited_by uuid references auth.users(id) not null,
   status text not null default 'pending' check (status in ('pending', 'accepted', 'expired')),
   token uuid default gen_random_uuid(),
@@ -214,14 +214,14 @@ create policy "select_members_same_org" on organization_members
 create policy "insert_member_manage" on organization_members
   for insert with check (get_org_role(organization_id) in ('owner', 'co_owner'));
 
--- CATEGORIES: semua anggota bisa lihat, owner/treasurer bisa edit
+-- CATEGORIES: semua anggota bisa lihat, owner/co-owner/treasurer bisa edit
 create policy "select_categories" on categories
   for select using (is_org_member(organization_id));
 
 create policy "insert_categories" on categories
   for insert with check (get_org_role(organization_id) in ('owner', 'treasurer'));
 
--- TRANSACTIONS: semua anggota bisa lihat, owner/treasurer bisa CRUD
+-- TRANSACTIONS: semua anggota bisa lihat, owner/co-owner/treasurer bisa CRUD
 create policy "select_transactions" on transactions
   for select using (is_org_member(organization_id));
 
@@ -291,14 +291,14 @@ kaskita/
 │   │       ├── transactions/page.tsx   # list + filter + form dialog
 │   │       ├── categories/page.tsx     # kelola kategori (dialog)
 │   │       ├── reports/page.tsx        # laporan bulanan (filter bulan/tahun + per kategori)
-│   │       ├── members/page.tsx        # kelola anggota (owner only)
+│   │       ├── members/page.tsx        # kelola anggota (owner/co-owner)
 │   │       └── settings/page.tsx       # pengaturan organisasi
 │   ├── invite/accept/page.tsx          # landing terima undangan
 │   ├── api/                            # HANYA untuk logic ber-privilege (service_role)
 │   │   ├── invitations/route.ts        # undang via email + daftarkan anggota manual
 │   │   ├── invitations/accept/route.ts # validasi token + expires_at
 │   │   └── members/route.ts            # kelola anggota: buat/existing, ubah role, reset password, ganti email, nonaktifkan/aktifkan akun, putuskan semua sesi, hapus
-│   │   └── reports/route.ts            # GET laporan bulanan PDF (pdfmake, owner/bendahara, no-store)
+│   │   └── reports/route.ts            # GET laporan bulanan PDF (pdfmake, semua role, no-store)
 │   ├── layout.tsx                      # font Baloo 2, theme-init script, PWA manifest, theme color
 │   └── page.tsx                        # redirect: login / org pertama / onboarding
 ├── components/
@@ -385,11 +385,12 @@ Sudah terpasang: `manifest` (Next.js) + service worker (`public/sw.js`) + ikon 1
 ### Fase 3 — Laporan (2-3 hari)
 - [x] Laporan bulanan (saldo awal kumulatif, total masuk, keluar, saldo akhir kumulatif)
 - [ ] Grafik tren sederhana (pakai Recharts)  *(belum dikerjakan)*
-- [ ] Export laporan (PDF/Excel) — fase 2+  *(belum dikerjakan)*
+- [x] Export PDF laporan bulanan (semua role)
+- [ ] Export laporan ke Excel  *(belum dikerjakan)*
 
 ### Fase 4 — Kelola Anggota (2 hari)
 - [x] Undang anggota via email (invitation table + Supabase Auth built-in invite, lihat strategi email di section 6.5)
-- [x] Kelola role anggota (owner only)
+- [x] Kelola role anggota (owner/co-owner)
 
 ### Fase 5 — Mobile Polish & PWA (2 hari)
 - [x] Audit semua halaman di viewport mobile

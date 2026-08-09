@@ -70,7 +70,7 @@ Acceptance criteria:
 ## EPIC 3 — Transaksi Kas
 
 ### US-3.1 Tambah transaksi
-**Sebagai** owner/treasurer, **saya ingin** mencatat transaksi masuk/keluar.
+**Sebagai** owner/co-owner/treasurer, **saya ingin** mencatat transaksi masuk/keluar.
 
 Acceptance criteria:
 - [ ] Form: jenis (income/expense), kategori (dropdown dari `categories` organisasi aktif), nominal, tanggal (default hari ini), deskripsi (opsional), upload foto bukti (opsional)
@@ -87,13 +87,13 @@ Acceptance criteria:
 
 ### US-3.3 Edit & hapus transaksi
 Acceptance criteria:
-- [x] Hanya owner/treasurer yang bisa edit/hapus (viewer tidak bisa)
+- [x] Hanya owner/co-owner/treasurer yang bisa edit/hapus (viewer tidak bisa)
 - [x] Konfirmasi dialog sebelum hapus (mencegah kehapus tidak sengaja)
 - [x] Setelah edit/hapus → saldo & list ter-update otomatis
 
 ### US-3.4 Kelola kategori
 Acceptance criteria:
-- [x] Owner/treasurer bisa tambah/edit/hapus kategori kustom per organisasi
+- [x] Owner/co-owner/treasurer bisa tambah/edit/hapus kategori kustom per organisasi
 - [x] Kategori default disediakan saat organisasi baru dibuat (misal: "Iuran Warga", "Kebersihan", "Keamanan", "Lain-lain" untuk income & expense)
 - [x] Tidak bisa hapus kategori yang masih dipakai transaksi (atau soft-handle: transaksi tetap ada, kategori ditandai "dihapus")
 
@@ -112,7 +112,7 @@ Acceptance criteria:
 Acceptance criteria:
 - [x] Pilih bulan & tahun → tampilkan saldo awal bulan (kumulatif sejak awal organisasi), total income, expense, selisih, dan saldo akhir bulan (kumulatif — menyambung antar bulan, bukan reset ke nol)
 - [x] Breakdown per kategori
-- [x] Export ke PDF (owner/bendahara) — PDF detail: ringkasan saldo awal/akhir, rincian per kategori, dan daftar transaksi per tanggal untuk dibagikan via WhatsApp
+- [x] Export ke PDF (semua role) — PDF detail: ringkasan saldo awal/akhir, rincian per kategori, dan daftar transaksi per tanggal untuk dibagikan via WhatsApp
 
 ---
 

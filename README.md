@@ -21,7 +21,7 @@ Platform kas organisasi (multi-tenant) — catat pemasukan/pengeluaran untuk RT,
 - Kelola anggota: undang via email, daftarkan manual (password sementara), **tambah anggota yang sudah punya akun**, ubah role, **atur ulang password**, **ganti email**, **nonaktifkan/aktifkan akun**, **putuskan semua sesi**, hapus
 - **Tema per-akun**: 5 tema (Klasik, Kawaii, Ocean, Forest, Sunrise) — pilihan tersimpan di akun
 - Indikator loading di semua aksi (spinner tombol/form) + skeleton & spinner saat pindah menu, serta **skeleton saat ganti filter/pagination (transaksi) & bulan/tahun (laporan)**
-- Input tanggal menampilkan petunjuk format `dd/mm/yyyy` di semua perangkat (placeholder native tak muncul di HP)
+- Input tanggal menampilkan petunjuk format `dd/mm/yyyy` di Android/desktop; di iPhone memakai placeholder tanggal bawaan (overlap dihindari via CSS)
 - Mobile-first + PWA (Add to Home Screen)
 
 ## Menjalankan di lokal
@@ -41,6 +41,7 @@ Salin `.env.local.example` → `.env.local`:
 NEXT_PUBLIC_SUPABASE_URL=...
 NEXT_PUBLIC_SUPABASE_ANON_KEY=...
 SUPABASE_SERVICE_ROLE_KEY=...   # server-only, JANGAN pernah di client
+SUPABASE_ACCESS_TOKEN=...       # opsional, untuk tooling (Management API / scripts\run-sql.ps1)
 ```
 
 ## Struktur folder
