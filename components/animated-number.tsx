@@ -7,10 +7,12 @@ import { formatRupiah } from "@/lib/utils";
 export function AnimatedNumber({ value }: { value: number }) {
   const [display, setDisplay] = useState(value);
   const fromRef = useRef(value);
+  const startedRef = useRef(false);
 
   useEffect(() => {
-    const from = fromRef.current;
+    const from = startedRef.current ? fromRef.current : 0;
     const to = value;
+    startedRef.current = true;
     if (from === to) return;
     const start = performance.now();
     const duration = 900;
