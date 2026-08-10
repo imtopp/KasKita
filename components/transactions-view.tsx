@@ -306,25 +306,21 @@ export function TransactionsView({
                   : "Catatan kas akan tampil di sini setelah ada transaksi."
             }
             action={
-              hasActiveFilters ? (
-                <Button
-                  variant="outline"
-                  className="h-11 px-4 text-base"
-                  onClick={resetFilters}
-                >
-                  Reset filter
-                </Button>
-              ) : canManage ? (
-                <Button
-                  className="h-11 px-4 text-base"
-                  onClick={() => {
-                    setEditing(null);
-                    setFormOpen(true);
-                  }}
-                >
-                  Tambah transaksi
-                </Button>
-              ) : undefined
+              hasActiveFilters
+                ? undefined
+                : canManage
+                  ? (
+                      <Button
+                        className="h-11 px-4 text-base"
+                        onClick={() => {
+                          setEditing(null);
+                          setFormOpen(true);
+                        }}
+                      >
+                        Tambah transaksi
+                      </Button>
+                    )
+                  : undefined
             }
           />
         </div>
