@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { KeyRound, Loader2, Users } from "lucide-react";
+import { KeyRound, Loader2, Mail, Users } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/empty-state";
@@ -26,7 +26,8 @@ import { InviteMemberDialog } from "@/components/invite-member-dialog";
 import { MemberManageDialog } from "@/components/member-manage-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/components/ui/toast";
-import type { MemberRow } from "@/lib/types";
+import type { MemberRow, PendingInvitation } from "@/lib/types";
+import { formatDateID } from "@/lib/utils";
 
 const ROLE_LABELS: Record<MemberRow["role"], string> = {
   owner: "Owner",
@@ -47,6 +48,9 @@ export function MembersView({
   const isOwner = currentRole === "owner";
   const { toast } = useToast();
   const [members, setMembers] = useState<MemberRow[]>([]);
+  const [pendingInvitations, setPendingInvitations] = useState<
+    PendingInvitation[]
+  >([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -57,11 +61,17 @@ export function MembersView({
   const [managing, setManaging] = useState<MemberRow | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [resendingId, setResendingId] = useState<string | null>(null);
 
   async function fetchMembers() {
     const res = await fetch(`/api/members?orgId=${encodeURIComponent(orgId)}`);
     const data = await res.json().catch(() => ({}));
-    return { ok: res.ok, error: data.error, members: data.members };
+    return {
+      ok: res.ok,
+      error: data.error,
+      members: data.members,
+      pendingInvitations: data.pendingInvitations,
+    };
   }
 
   async function loadMembers() {
@@ -72,6 +82,7 @@ export function MembersView({
     } else {
       setError(null);
       setMembers(result.members ?? []);
+      setPendingInvitations(result.pendingInvitations ?? []);
     }
     setLoading(false);
   }
@@ -85,6 +96,7 @@ export function MembersView({
       } else {
         setError(null);
         setMembers(result.members ?? []);
+        setPendingInvitations(result.pendingInvitations ?? []);
       }
       setLoading(false);
     });
@@ -93,6 +105,35 @@ export function MembersView({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orgId]);
+
+  async function resendInvitation(invitation: PendingInvitation) {
+    if (resendingId) return;
+    setResendingId(invitation.id);
+    const res = await fetch("/api/invitations", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        orgId,
+        invitationId: invitation.id,
+        resend: true,
+      }),
+    });
+    const data = await res.json().catch(() => ({}));
+    setResendingId(null);
+    if (!res.ok) {
+      toast({
+        title: "Gagal mengirim ulang undangan",
+        description: data.error ?? "Coba lagi.",
+        variant: "destructive",
+      });
+      return;
+    }
+    toast({
+      title: "Undangan dikirim ulang",
+      description: data.message ?? "Cek email penerima.",
+    });
+    await loadMembers();
+  }
 
   async function changeRole(member: MemberRow, role: MemberRow["role"]) {
     if (member.role === role || busy) return;
@@ -193,6 +234,59 @@ export function MembersView({
       {notice && (
         <div className="rounded-lg bg-muted px-3 py-2 text-sm">
           {notice}
+        </div>
+      )}
+
+      {pendingInvitations.length > 0 && (
+        <div className="space-y-2">
+          <h2 className="text-sm font-semibold text-muted-foreground">
+            Undangan belum diterima
+          </h2>
+          <ul className="space-y-2">
+            {pendingInvitations.map((invitation) => {
+              const expired = invitation.expired;
+              return (
+                <li
+                  key={invitation.id}
+                  className="rounded-xl border bg-card p-4"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="min-w-0 space-y-0.5">
+                      <p className="truncate text-sm font-medium">
+                        {invitation.email}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {ROLE_LABELS[invitation.role]} ·{" "}
+                        {expired
+                          ? "Kedaluwarsa"
+                          : `Berlaku sampai ${formatDateID(
+                              invitation.expires_at.slice(0, 10),
+                            )}`}
+                      </p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      className="h-11 px-3 text-sm"
+                      disabled={resendingId !== null}
+                      onClick={() => resendInvitation(invitation)}
+                    >
+                      {resendingId === invitation.id ? (
+                        <>
+                          <Loader2 className="size-4 animate-spin" aria-hidden />
+                          Mengirim...
+                        </>
+                      ) : (
+                        <>
+                          <Mail className="size-4" aria-hidden />
+                          Kirim ulang
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
         </div>
       )}
 

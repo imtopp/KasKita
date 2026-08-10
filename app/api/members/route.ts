@@ -75,11 +75,21 @@ export async function GET(request: NextRequest) {
 
   const { data: invitations } = await admin
     .from("invitations")
-    .select("email")
+    .select("id, email, role, created_at, expires_at, status")
     .eq("organization_id", orgId);
   const invitedEmails = new Set(
     (invitations ?? []).map((invitation) => invitation.email.toLowerCase()),
   );
+  const pendingInvitations = (invitations ?? [])
+    .filter((invitation) => invitation.status === "pending")
+    .map((invitation) => ({
+      id: invitation.id,
+      email: invitation.email,
+      role: invitation.role,
+      created_at: invitation.created_at,
+      expires_at: invitation.expires_at,
+      expired: new Date(invitation.expires_at).getTime() < Date.now(),
+    }));
 
   const result = [];
   for (const member of members ?? []) {
@@ -105,7 +115,7 @@ export async function GET(request: NextRequest) {
   }
 
   return NextResponse.json(
-    { members: result },
+    { members: result, pendingInvitations },
     { headers: { "Cache-Control": "no-store" } },
   );
 }

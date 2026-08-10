@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Baloo_2 } from "next/font/google";
 import Script from "next/script";
 
+import { PwaUpdatePrompt } from "@/components/pwa-update-prompt";
 import { ServiceWorkerRegister } from "@/components/service-worker-register";
 import "./globals.css";
 
@@ -41,6 +42,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full flex flex-col">
         {children}
         <ServiceWorkerRegister />
+        <PwaUpdatePrompt />
       </body>
     </html>
   );

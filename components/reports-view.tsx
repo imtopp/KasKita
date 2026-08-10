@@ -27,12 +27,14 @@ const YEAR_RANGE = 10;
 
 export function ReportsView({
   orgId,
+  orgSlug,
   month,
   year,
   totals,
   breakdown,
 }: {
   orgId: string;
+  orgSlug: string;
   month: number;
   year: number;
   totals: MonthTotals;
@@ -82,7 +84,7 @@ export function ReportsView({
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement("a");
       anchor.href = url;
-      anchor.download = `laporan-kas-${year}-${String(month).padStart(2, "0")}.pdf`;
+      anchor.download = `laporan-kas-${orgSlug}-${year}-${String(month).padStart(2, "0")}.pdf`;
       document.body.appendChild(anchor);
       anchor.click();
       anchor.remove();

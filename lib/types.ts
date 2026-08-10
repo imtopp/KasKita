@@ -194,3 +194,12 @@ export type MemberRow = {
   source: "email" | "manual";
   banned_until: string | null;
 };
+
+export type PendingInvitation = {
+  id: string;
+  email: string;
+  role: "treasurer" | "viewer";
+  created_at: string;
+  expires_at: string;
+  expired: boolean;
+};

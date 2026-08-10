@@ -30,7 +30,7 @@ export default async function ReportsPage({
 
   const { data: org } = await supabase
     .from("organizations")
-    .select("id")
+    .select("id, name, slug")
     .eq("slug", slug)
     .single();
   if (!org) {
@@ -71,6 +71,7 @@ export default async function ReportsPage({
   return (
     <ReportsView
       orgId={org.id}
+      orgSlug={org.slug}
       month={month}
       year={year}
       totals={totals}

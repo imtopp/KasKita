@@ -62,3 +62,33 @@ export function categoryFromEmbedded(
   if (!embedded) return null;
   return Array.isArray(embedded) ? embedded[0] ?? null : embedded;
 }
+
+export type DatePresetKey = "today" | "7d" | "month" | "30d";
+
+export function dateRangeForPreset(
+  key: DatePresetKey,
+): { from: string; to: string } {
+  const now = new Date();
+  const pad = (value: number) => String(value).padStart(2, "0");
+  const iso = (date: Date) =>
+    `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+  switch (key) {
+    case "today": {
+      const from = todayISO();
+      return { from, to: from };
+    }
+    case "7d": {
+      const from = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 6);
+      return { from: iso(from), to: todayISO() };
+    }
+    case "30d": {
+      const from = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 29);
+      return { from: iso(from), to: todayISO() };
+    }
+    case "month": {
+      const first = new Date(now.getFullYear(), now.getMonth(), 1);
+      const last = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+      return { from: iso(first), to: iso(last) };
+    }
+  }
+}

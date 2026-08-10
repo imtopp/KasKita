@@ -30,9 +30,22 @@ import { useToast } from "@/components/ui/toast";
 import { TransactionFormDialog } from "@/components/transaction-form-dialog";
 import { createClient } from "@/lib/supabase/client";
 import type { CategoryOption, TransactionRow } from "@/lib/types";
-import { cn, formatDateID, formatRupiah } from "@/lib/utils";
+import {
+  cn,
+  dateRangeForPreset,
+  formatDateID,
+  formatRupiah,
+  type DatePresetKey,
+} from "@/lib/utils";
 
 const ALL = "__all__";
+
+const DATE_PRESETS: { key: DatePresetKey; label: string }[] = [
+  { key: "today", label: "Hari ini" },
+  { key: "7d", label: "7 hari" },
+  { key: "month", label: "Bulan ini" },
+  { key: "30d", label: "30 hari" },
+];
 
 type Filters = {
   type: string | null;
@@ -108,6 +121,10 @@ export function TransactionsView({
       { type: null, category: null, from: null, to: null },
       null,
     );
+  }
+
+  function setFilterDates(from: string, to: string) {
+    applyParams({ from, to }, null);
   }
 
   async function undoDelete(tx: TransactionRow) {
@@ -270,6 +287,26 @@ export function TransactionsView({
             onChange={(e) => setFilter("to", e.target.value || null)}
           />
         </div>
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        {DATE_PRESETS.map((preset) => {
+          const range = dateRangeForPreset(preset.key);
+          const active =
+            filters.from === range.from && filters.to === range.to;
+          return (
+            <Button
+              key={preset.key}
+              type="button"
+              variant={active ? "default" : "outline"}
+              size="sm"
+              className="h-9 px-3 text-sm"
+              onClick={() => setFilterDates(range.from, range.to)}
+            >
+              {preset.label}
+            </Button>
+          );
+        })}
       </div>
 
       {hasActiveFilters && (

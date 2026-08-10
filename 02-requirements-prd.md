@@ -201,6 +201,11 @@ Fitur berikut sudah dikerjakan atas permintaan eksplisit user dan menjadi bagian
 - **Empty state di semua list** (transaksi, kategori, anggota, laporan): ikon + judul + deskripsi + aksi kontekstual. Khusus transaksi: bedakan "belum ada transaksi sama sekali" (aksi → Tambah transaksi) vs "tidak ada hasil untuk filter" (aksi → Reset filter).
 - **Toast notifikasi + Undo hapus transaksi**: sistem toast ringan tanpa dependency (`components/ui/toast.tsx` — provider, hook `useToast`, viewport fixed di bawah layar, auto-dismiss, dukungan tombol aksi). Hapus transaksi menampilkan toast "Transaksi dihapus" dengan tombol **Urungkan** (durasi 8 detik) yang mengembalikan baris transaksi dengan `id` yang sama; hapus kategori & anggota juga menampilkan toast sukses.
 - **Pull-to-refresh list transaksi** (`components/pull-to-refresh.tsx`): tarik ke bawah di posisi paling atas halaman Transaksi memuat ulang data via `router.refresh()` — tanpa dependency, murni touch events + `useTransition`.
+- **Quick date filter transaksi**: tombol preset rentang tanggal (Hari ini / 7 hari / Bulan ini / 30 hari) di bawah baris filter — sekali tap langsung mengisi filter tanggal.
+- **Nama file PDF deskriptif**: `laporan-kas-<slug-org>-<tahun>-<bulan>.pdf` (client disamakan dengan `Content-Disposition` server) — memudahkan identifikasi saat dibagikan.
+- **Prefetch tab navigasi**: semua link menu di bottom/desktop nav diberi `prefetch` — pindah tab terasa instan.
+- **Kirim ulang undangan**: undangan belum diterima (termasuk kedaluwarsa) ditampilkan di halaman Anggota dengan tombol **Kirim ulang** yang membuat undangan baru (token + masa berlaku baru) dan mengirim ulang email.
+- **PWA update prompt**: saat versi baru terpasang, muncul banner "Versi baru KasKita tersedia" + tombol Muat ulang (SW tidak lagi `skipWaiting` otomatis; `sw.js` di-serve dengan `must-revalidate`).
 
 
 
