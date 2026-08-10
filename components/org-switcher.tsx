@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 
 import { usePathname, useRouter } from "next/navigation";
 
-import { Building2, Loader2, PlusIcon } from "lucide-react";
+import { Loader2, PlusIcon } from "lucide-react";
 
 import {
   Select,
@@ -71,19 +71,12 @@ export function OrgSwitcher({
         disabled={isSwitching}
       >
         {isSwitching ? (
-          <Loader2
-            className="size-4 shrink-0 animate-spin md:hidden"
-            aria-hidden
-          />
-        ) : (
-          <Building2 className="size-4 shrink-0 md:hidden" aria-hidden />
-        )}
-        {isSwitching ? (
-          <span className="max-md:sr-only text-muted-foreground">
-            Memuat…
+          <span className="flex min-w-0 items-center gap-1.5 text-muted-foreground">
+            <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
+            <span className="truncate">Memuat…</span>
           </span>
         ) : (
-          <SelectValue className="max-md:sr-only" />
+          <SelectValue />
         )}
       </SelectTrigger>
       <SelectContent align="end" className="min-w-64">

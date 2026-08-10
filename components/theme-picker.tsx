@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-import { Loader2 } from "lucide-react";
+import { Loader2, Palette } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 
@@ -75,8 +75,12 @@ export function ThemePicker({
           className,
         )}
       >
-        {saving && <Loader2 className="size-4 animate-spin" aria-hidden />}
-        <SelectValue />
+        {saving ? (
+          <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
+        ) : (
+          <Palette className="size-4 shrink-0" aria-hidden />
+        )}
+        <SelectValue className="sr-only" />
       </SelectTrigger>
       <SelectContent align="end">
         {THEMES.map((t) => (
