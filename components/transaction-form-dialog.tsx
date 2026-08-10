@@ -181,7 +181,10 @@ export function TransactionFormDialog({
     }
 
     onOpenChange(false);
-    router.refresh();
+    // Sama seperti confirmDelete (transactions-view.tsx): tunda refresh
+    // sampai popstate dari back-close dialog selesai diproses Next router,
+    // supaya simpan transaksi tidak memantulkan navigasi ke halaman sebelumnya.
+    setTimeout(() => setTimeout(() => router.refresh(), 0), 0);
   });
 
   return (

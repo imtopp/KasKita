@@ -24,6 +24,18 @@ function Dialog({ open, onOpenChange, ...props }: DialogPrimitive.Root.Props) {
     [isControlled, onOpenChange],
   );
 
+  // Effect back-close HANYA boleh jalan saat dialog buka/tutup, bukan saat
+  // parent re-render. onOpenChange kerap berbentuk arrow inline (identitas
+  // baru tiap render) sehingga kalau dijadikan dependency, effect jalan ulang
+  // terus-menerus: cleanup memanggil history.back() lalu listener baru yang
+  // terpasang mendengar popstate-nya dan menutup dialog sendiri (gejala:
+  // popup menutup mendadak, entry history palsu menumpuk). Pakai ref agar
+  // selalu memanggil handler terbaru tanpa membuat effect re-run.
+  const handleOpenChangeRef = React.useRef(handleOpenChange);
+  React.useEffect(() => {
+    handleOpenChangeRef.current = handleOpenChange;
+  });
+
   // Back (Android/iOS) menutup dialog lebih dulu seperti app native,
   // bukan langsung kembali ke halaman sebelumnya.
   React.useEffect(() => {
@@ -34,7 +46,7 @@ function Dialog({ open, onOpenChange, ...props }: DialogPrimitive.Root.Props) {
     let removedByPop = false;
     const onPopState = () => {
       removedByPop = true;
-      handleOpenChange(false);
+      handleOpenChangeRef.current(false);
     };
     window.addEventListener("popstate", onPopState);
     return () => {
@@ -49,7 +61,7 @@ function Dialog({ open, onOpenChange, ...props }: DialogPrimitive.Root.Props) {
         window.history.back();
       }
     };
-  }, [currentOpen, handleOpenChange]);
+  }, [currentOpen]);
 
   return (
     <DialogPrimitive.Root

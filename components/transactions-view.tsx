@@ -174,7 +174,12 @@ export function TransactionsView({
       return;
     }
     setDeleting(null);
-    router.refresh();
+    // Dialog menutup via history.back() (back-close) yang popstate-nya harus
+    // selesai diproses Next router DULU sebelum refresh. setTimeout ganda ini
+    // menjamin refresh dijalankan setelah task popstate; tanpa ini refresh
+    // sinkron beradu dengan popstate dan Next bisa "restore" ke halaman
+    // sebelumnya (Dashboard).
+    setTimeout(() => setTimeout(() => router.refresh(), 0), 0);
     toast({
       title: "Transaksi dihapus",
       description: `${removed.type === "income" ? "Pemasukan" : "Pengeluaran"} ${formatRupiah(removed.amount)} tanggal ${formatDateID(removed.transaction_date)} dihapus permanen.`,
