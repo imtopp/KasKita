@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { ArrowDownCircle, ArrowUpCircle, Loader2, type LucideIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -88,9 +87,13 @@ export function CategoriesView({
   categories: CategoryRow[];
   canManage: boolean;
 }) {
-  const router = useRouter();
   const supabase = createClient();
   const { toast } = useToast();
+
+  // Daftar kategori dikelola di state client. Tidak pakai router.refresh() saat
+  // menambah/edit/menghapus karena `history.back()` dari dialog (back-close)
+  // membuat Next router membalikkan navigasi ke halaman sebelumnya (transaksi).
+  const [list, setList] = useState<CategoryRow[]>(categories);
 
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<CategoryRow | null>(null);
@@ -115,16 +118,24 @@ export function CategoriesView({
       );
       return;
     }
+    setList((prev) => prev.filter((c) => c.id !== deleting.id));
     setDeleting(null);
-    router.refresh();
     toast({
       title: "Kategori dihapus",
       description: `Kategori "${deleting.name}" tidak muncul lagi untuk transaksi baru. Transaksi lama tetap tersimpan.`,
     });
   }
 
-  const income = categories.filter((c) => c.type === "income");
-  const expense = categories.filter((c) => c.type === "expense");
+  function handleSaved(saved: CategoryRow) {
+    setList((prev) =>
+      editing
+        ? prev.map((c) => (c.id === editing.id ? saved : c))
+        : [...prev, saved],
+    );
+  }
+
+  const income = list.filter((c) => c.type === "income");
+  const expense = list.filter((c) => c.type === "expense");
 
   return (
     <div className="space-y-6">
@@ -184,6 +195,7 @@ export function CategoriesView({
         onOpenChange={setFormOpen}
         orgId={orgId}
         category={editing}
+        onSaved={handleSaved}
       />
 
       <Dialog

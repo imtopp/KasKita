@@ -23,6 +23,7 @@ Platform kas organisasi (multi-tenant) — catat pemasukan/pengeluaran untuk RT,
 - **Perilaku navigasi native mobile**: Back menutup dialog/dropdown lebih dulu; ganti tab dengan dashboard sebagai root (Back selalu kembali ke Dashboard); header menampilkan nama aplikasi + org switcher berikon + tema ikon
 - **Empty state di semua list** + **toast notifikasi dengan Undo hapus transaksi** + **pull-to-refresh list transaksi** (semua tanpa dependency tambahan)
 - **Quick date filter** transaksi (Hari ini/7 hari/Bulan ini/30 hari), **file PDF bernama `laporan-kas-<org>-<bulan>-<tahun>`**, **prefetch tab** agar pindah menu instan, **kirim ulang undangan** yang belum diterima, dan **banner update PWA** ("Versi baru tersedia" + Muat ulang)
+- **Toast kontras tinggi** (chip gelap `bg-foreground`) + **halaman Kategori tetap di tempatnya saat tambah/edit/hapus kategori** (daftar kategori dikelola di state client, tanpa `router.refresh()` yang sempat membalikkan navigasi ke halaman Transaksi)
 - **Tema per-akun**: 5 tema (Klasik, Kawaii, Ocean, Forest, Sunrise) — pilihan tersimpan di akun
 - Indikator loading di semua aksi (spinner tombol/form) + skeleton & spinner saat pindah menu, serta **skeleton saat ganti filter/pagination (transaksi) & bulan/tahun (laporan)**
 - Input tanggal menampilkan petunjuk format `dd/mm/yyyy` di Android/desktop; di iPhone memakai placeholder tanggal bawaan (overlap dihindari via CSS)

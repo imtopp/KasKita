@@ -106,8 +106,10 @@ function ToastViewport({
           role="status"
           aria-live="polite"
           className={cn(
-            "pointer-events-auto flex w-full max-w-sm items-start gap-3 rounded-xl border bg-card p-4 shadow-lg shadow-black/5 animate-in slide-in-from-bottom-4 fade-in-0 duration-200 ease-out",
-            item.variant === "destructive" && "border-destructive/30",
+            "pointer-events-auto flex w-full max-w-sm items-start gap-3 rounded-xl border p-4 shadow-lg shadow-black/20 animate-in slide-in-from-bottom-4 fade-in-0 duration-200 ease-out",
+            item.variant === "destructive"
+              ? "border-destructive-foreground/30 bg-destructive text-destructive-foreground"
+              : "border-background/20 bg-foreground text-background",
           )}
         >
           <div className="min-w-0 flex-1 space-y-0.5">
@@ -115,7 +117,14 @@ function ToastViewport({
               <p className="text-sm font-semibold">{item.title}</p>
             )}
             {item.description && (
-              <p className="text-sm text-muted-foreground">
+              <p
+                className={cn(
+                  "text-sm",
+                  item.variant === "destructive"
+                    ? "text-destructive-foreground/80"
+                    : "text-background/70",
+                )}
+              >
                 {item.description}
               </p>
             )}

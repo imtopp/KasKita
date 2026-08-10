@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { Loader2 } from "lucide-react";
 
@@ -43,13 +42,14 @@ export function CategoryFormDialog({
   onOpenChange,
   orgId,
   category,
+  onSaved,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   orgId: string;
   category: CategoryRow | null;
+  onSaved: (saved: CategoryRow) => void;
 }) {
-  const router = useRouter();
   const supabase = createClient();
   const [serverError, setServerError] = useState<string | null>(null);
 
@@ -104,10 +104,16 @@ export function CategoryFormDialog({
         setServerError(errorMessage(error));
         return;
       }
+      onSaved({ ...category, name: parsed.data.name, type: parsed.data.type });
     } else {
+      const id =
+        typeof crypto !== "undefined" && "randomUUID" in crypto
+          ? crypto.randomUUID()
+          : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
       const { error } = await supabase
         .from("categories")
         .insert({
+          id,
           organization_id: orgId,
           name: parsed.data.name,
           type: parsed.data.type,
@@ -116,10 +122,17 @@ export function CategoryFormDialog({
         setServerError(errorMessage(error));
         return;
       }
+      onSaved({
+        id,
+        organization_id: orgId,
+        name: parsed.data.name,
+        type: parsed.data.type,
+        is_deleted: false,
+        created_at: new Date().toISOString(),
+      });
     }
 
     onOpenChange(false);
-    router.refresh();
   });
 
   return (
