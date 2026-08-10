@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { Download, Loader2 } from "lucide-react";
+import { Download, Loader2, Receipt } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -11,6 +11,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { EmptyState } from "@/components/empty-state";
 import {
   Select,
   SelectContent,
@@ -228,9 +229,12 @@ export function ReportsView({
         </CardHeader>
         <CardContent className="space-y-3">
           {breakdown.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              Belum ada transaksi di bulan ini.
-            </p>
+            <EmptyState
+              icon={Receipt}
+              compact
+              title="Belum ada transaksi di bulan ini"
+              description="Tambah transaksi di halaman Transaksi agar laporan terisi."
+            />
           ) : (
             breakdown.map((item, index) => (
               <div

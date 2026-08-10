@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2 } from "lucide-react";
+import { ArrowDownCircle, ArrowUpCircle, Loader2, type LucideIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -15,17 +15,21 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { CategoryFormDialog } from "@/components/category-form-dialog";
+import { EmptyState } from "@/components/empty-state";
+import { useToast } from "@/components/ui/toast";
 import { createClient } from "@/lib/supabase/client";
 import type { CategoryRow } from "@/lib/types";
 
 function CategoryList({
   title,
+  icon,
   items,
   canManage,
   onEdit,
   onDelete,
 }: {
   title: string;
+  icon: LucideIcon;
   items: CategoryRow[];
   canManage: boolean;
   onEdit: (category: CategoryRow) => void;
@@ -35,9 +39,12 @@ function CategoryList({
     <div className="space-y-2">
       <h2 className="text-sm font-semibold text-muted-foreground">{title}</h2>
       {items.length === 0 ? (
-        <div className="rounded-xl border border-dashed px-4 py-6 text-center text-sm text-muted-foreground">
-          Belum ada kategori {title.toLowerCase()}.
-        </div>
+        <EmptyState
+          icon={icon}
+          compact
+          title={`Belum ada kategori ${title.toLowerCase()}`}
+          description="Buat kategori agar transaksi lebih mudah dikelompokkan."
+        />
       ) : (
         <ul className="space-y-2">
           {items.map((category) => (
@@ -83,6 +90,7 @@ export function CategoriesView({
 }) {
   const router = useRouter();
   const supabase = createClient();
+  const { toast } = useToast();
 
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<CategoryRow | null>(null);
@@ -109,6 +117,10 @@ export function CategoriesView({
     }
     setDeleting(null);
     router.refresh();
+    toast({
+      title: "Kategori dihapus",
+      description: `Kategori "${deleting.name}" tidak muncul lagi untuk transaksi baru. Transaksi lama tetap tersimpan.`,
+    });
   }
 
   const income = categories.filter((c) => c.type === "income");
@@ -140,6 +152,7 @@ export function CategoriesView({
 
       <CategoryList
         title="Pemasukan"
+        icon={ArrowUpCircle}
         items={income}
         canManage={canManage}
         onEdit={(category) => {
@@ -153,6 +166,7 @@ export function CategoriesView({
       />
       <CategoryList
         title="Pengeluaran"
+        icon={ArrowDownCircle}
         items={expense}
         canManage={canManage}
         onEdit={(category) => {

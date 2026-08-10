@@ -2,10 +2,12 @@
 
 import { useState, useTransition } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { Loader2 } from "lucide-react";
+import { Loader2, Receipt } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { DateInput } from "@/components/date-input";
+import { EmptyState } from "@/components/empty-state";
+import { PullToRefresh } from "@/components/pull-to-refresh";
 import {
   Dialog,
   DialogClose,
@@ -24,6 +26,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/components/ui/toast";
 import { TransactionFormDialog } from "@/components/transaction-form-dialog";
 import { createClient } from "@/lib/supabase/client";
 import type { CategoryOption, TransactionRow } from "@/lib/types";
@@ -57,6 +60,7 @@ export function TransactionsView({
 }) {
   const router = useRouter();
   const pathname = usePathname();
+  const { toast } = useToast();
   const supabase = createClient();
 
   const [isPending, startTransition] = useTransition();
@@ -65,6 +69,8 @@ export function TransactionsView({
   const [deleting, setDeleting] = useState<TransactionRow | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+
+  const hasActiveFilters = !!(filters.type || filters.category || filters.from || filters.to);
 
   function applyParams(
     updates: Record<string, string | null>,
@@ -97,14 +103,50 @@ export function TransactionsView({
     applyParams({}, next);
   }
 
+  function resetFilters() {
+    applyParams(
+      { type: null, category: null, from: null, to: null },
+      null,
+    );
+  }
+
+  async function undoDelete(tx: TransactionRow) {
+    const { error } = await supabase.from("transactions").insert({
+      id: tx.id,
+      organization_id: tx.organization_id,
+      category_id: tx.category_id,
+      type: tx.type,
+      amount: tx.amount,
+      description: tx.description,
+      transaction_date: tx.transaction_date,
+      created_by: tx.created_by,
+    });
+    if (error) {
+      toast({
+        title: "Gagal memulihkan transaksi",
+        description: /row-level security|permission denied/i.test(error.message)
+          ? "Kamu tidak punya izin untuk menambahkan transaksi."
+          : "Coba lagi atau tambahkan transaksi secara manual.",
+        variant: "destructive",
+      });
+      return;
+    }
+    router.refresh();
+    toast({
+      title: "Transaksi dipulihkan",
+      description: `${tx.type === "income" ? "Pemasukan" : "Pengeluaran"} ${formatRupiah(tx.amount)} tanggal ${formatDateID(tx.transaction_date)} kembali dicatat.`,
+    });
+  }
+
   async function confirmDelete() {
     if (!deleting || busy) return;
     setBusy(true);
     setDeleteError(null);
+    const removed = deleting;
     const { error } = await supabase
       .from("transactions")
       .delete()
-      .eq("id", deleting.id);
+      .eq("id", removed.id);
     setBusy(false);
     if (error) {
       setDeleteError(
@@ -116,10 +158,20 @@ export function TransactionsView({
     }
     setDeleting(null);
     router.refresh();
+    toast({
+      title: "Transaksi dihapus",
+      description: `${removed.type === "income" ? "Pemasukan" : "Pengeluaran"} ${formatRupiah(removed.amount)} tanggal ${formatDateID(removed.transaction_date)} dihapus permanen.`,
+      duration: 8000,
+      action: {
+        label: "Urungkan",
+        onClick: () => undoDelete(removed),
+      },
+    });
   }
 
   return (
-    <div className="space-y-4" aria-busy={isPending}>
+    <PullToRefresh>
+      <div className="space-y-4" aria-busy={isPending}>
       {isPending && <span className="sr-only">Memuat...</span>}
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-xl font-bold">Transaksi</h1>
@@ -223,8 +275,43 @@ export function TransactionsView({
       {isPending ? (
         <TransactionListSkeleton />
       ) : transactions.length === 0 ? (
-        <div className="animate-in slide-in-from-bottom-2 fade-in-0 rounded-xl border border-dashed px-4 py-10 text-center text-sm text-muted-foreground duration-[400ms] ease-out">
-          Belum ada transaksi.
+        <div className="animate-in slide-in-from-bottom-2 fade-in-0 duration-[400ms] ease-out">
+          <EmptyState
+            icon={Receipt}
+            title={
+              hasActiveFilters
+                ? "Tidak ada transaksi yang cocok"
+                : "Belum ada transaksi"
+            }
+            description={
+              hasActiveFilters
+                ? "Coba ubah atau reset filter untuk melihat hasil lain."
+                : canManage
+                  ? "Catat pemasukan dan pengeluaran pertamamu untuk mulai memantau kas organisasi."
+                  : "Catatan kas akan tampil di sini setelah ada transaksi."
+            }
+            action={
+              hasActiveFilters ? (
+                <Button
+                  variant="outline"
+                  className="h-11 px-4 text-base"
+                  onClick={resetFilters}
+                >
+                  Reset filter
+                </Button>
+              ) : canManage ? (
+                <Button
+                  className="h-11 px-4 text-base"
+                  onClick={() => {
+                    setEditing(null);
+                    setFormOpen(true);
+                  }}
+                >
+                  Tambah transaksi
+                </Button>
+              ) : undefined
+            }
+          />
         </div>
       ) : (
         <ul className="animate-in slide-in-from-bottom-2 fade-in-0 space-y-3 duration-[400ms] ease-out">
@@ -361,6 +448,7 @@ export function TransactionsView({
         </DialogContent>
       </Dialog>
     </div>
+    </PullToRefresh>
   );
 }
 

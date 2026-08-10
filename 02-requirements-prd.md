@@ -198,6 +198,9 @@ Fitur berikut sudah dikerjakan atas permintaan eksplisit user dan menjadi bagian
 - **Perilaku navigasi seperti app native mobile**:
   - Ganti tab antar menu memakai aturan **dashboard sebagai root** (`push` dari dashboard ke tab lain, `replace` antar tab non-dashboard dan kembali ke dashboard) sehingga Back dari tab mana pun kembali ke Dashboard, bukan ke tab sebelumnya; Back dari Dashboard keluar aplikasi
   - Tombol Back **menutup dialog lebih dulu** (semua `Dialog`) dan **menutup dropdown lebih dulu** (semua `Select`/org switcher/tema), baru Back berikutnya berpindah halaman — meniru perilaku app native; tumpukan dialog + dropdown di dalamnya ditutup berurutan
+- **Empty state di semua list** (transaksi, kategori, anggota, laporan): ikon + judul + deskripsi + aksi kontekstual. Khusus transaksi: bedakan "belum ada transaksi sama sekali" (aksi → Tambah transaksi) vs "tidak ada hasil untuk filter" (aksi → Reset filter).
+- **Toast notifikasi + Undo hapus transaksi**: sistem toast ringan tanpa dependency (`components/ui/toast.tsx` — provider, hook `useToast`, viewport fixed di bawah layar, auto-dismiss, dukungan tombol aksi). Hapus transaksi menampilkan toast "Transaksi dihapus" dengan tombol **Urungkan** (durasi 8 detik) yang mengembalikan baris transaksi dengan `id` yang sama; hapus kategori & anggota juga menampilkan toast sukses.
+- **Pull-to-refresh list transaksi** (`components/pull-to-refresh.tsx`): tarik ke bawah di posisi paling atas halaman Transaksi memuat ulang data via `router.refresh()` — tanpa dependency, murni touch events + `useTransition`.
 
 
 

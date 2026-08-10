@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { KeyRound, Loader2 } from "lucide-react";
+import { KeyRound, Loader2, Users } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/empty-state";
 import {
   Dialog,
   DialogClose,
@@ -24,6 +25,7 @@ import { CreateMemberDialog } from "@/components/create-member-dialog";
 import { InviteMemberDialog } from "@/components/invite-member-dialog";
 import { MemberManageDialog } from "@/components/member-manage-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/components/ui/toast";
 import type { MemberRow } from "@/lib/types";
 
 const ROLE_LABELS: Record<MemberRow["role"], string> = {
@@ -43,6 +45,7 @@ export function MembersView({
   currentRole: "owner" | "co_owner";
 }) {
   const isOwner = currentRole === "owner";
+  const { toast } = useToast();
   const [members, setMembers] = useState<MemberRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -126,7 +129,10 @@ export function MembersView({
       return;
     }
     setDeleting(null);
-    setNotice(`${deleting.name ?? deleting.email} dihapus dari organisasi.`);
+    toast({
+      title: "Anggota dihapus",
+      description: `${deleting.name ?? deleting.email} dikeluarkan dari organisasi.`,
+    });
     await loadMembers();
   }
 
@@ -191,9 +197,11 @@ export function MembersView({
       )}
 
       {members.length === 0 ? (
-        <div className="rounded-xl border border-dashed px-4 py-10 text-center text-sm text-muted-foreground">
-          Belum ada anggota.
-        </div>
+        <EmptyState
+          icon={Users}
+          title="Belum ada anggota"
+          description="Undang via email atau daftarkan anggota secara manual agar bisa ikut memantau kas."
+        />
       ) : (
         <ul className="space-y-2">
           {members.map((member) => (
