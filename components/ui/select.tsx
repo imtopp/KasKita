@@ -31,14 +31,54 @@ function collectSelectItems(
 function Select<Value, Multiple extends boolean | undefined = false>({
   children,
   items,
+  open,
+  onOpenChange,
   ...props
 }: SelectPrimitive.Root.Props<Value, Multiple>) {
   const derivedItems = React.useMemo(
     () => collectSelectItems(children),
     [children],
   )
+
+  const isControlled = open !== undefined
+  const [internalOpen, setInternalOpen] = React.useState(false)
+  const currentOpen = isControlled ? open : internalOpen
+
+  const handleOpenChange = React.useCallback(
+    (next: boolean) => {
+      if (!isControlled) setInternalOpen(next)
+      onOpenChange?.(next, undefined as never)
+    },
+    [isControlled, onOpenChange],
+  )
+
+  // Back (Android/iOS) menutup dropdown lebih dulu seperti app native,
+  // bukan langsung kembali ke halaman sebelumnya.
+  React.useEffect(() => {
+    if (!currentOpen) return
+    const prevURL = window.location.href
+    window.history.pushState({ selectOpen: true }, "")
+    let removedByPop = false
+    const onPopState = () => {
+      removedByPop = true
+      handleOpenChange(false)
+    }
+    window.addEventListener("popstate", onPopState)
+    return () => {
+      window.removeEventListener("popstate", onPopState)
+      if (!removedByPop && window.location.href === prevURL) {
+        window.history.back()
+      }
+    }
+  }, [currentOpen, handleOpenChange])
+
   return (
-    <SelectPrimitive.Root items={items ?? derivedItems} {...props}>
+    <SelectPrimitive.Root
+      items={items ?? derivedItems}
+      open={currentOpen}
+      onOpenChange={handleOpenChange}
+      {...props}
+    >
       {children}
     </SelectPrimitive.Root>
   )
