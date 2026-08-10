@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { Loader2 } from "lucide-react";
 
@@ -47,14 +46,15 @@ export function TransactionFormDialog({
   orgId,
   categories,
   transaction,
+  onSaved,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   orgId: string;
   categories: CategoryOption[];
   transaction: TransactionRow | null;
+  onSaved: () => void;
 }) {
-  const router = useRouter();
   const supabase = createClient();
   const [serverError, setServerError] = useState<string | null>(null);
 
@@ -181,10 +181,11 @@ export function TransactionFormDialog({
     }
 
     onOpenChange(false);
-    // Sama seperti confirmDelete (transactions-view.tsx): tunda refresh
-    // sampai popstate dari back-close dialog selesai diproses Next router,
-    // supaya simpan transaksi tidak memantulkan navigasi ke halaman sebelumnya.
-    setTimeout(() => setTimeout(() => router.refresh(), 0), 0);
+    // Refresh ditunda & di-gate oleh scheduleRefresh di TransactionsView agar
+    // tidak jatuh di jendela exit+hold popup dialog (menyebabkan popup
+    // "muncul lagi" sepersekian detik setelah fadeout — kambuh yang hanya
+    // muncul dengan latensi jaringan tinggi / throttling).
+    onSaved();
   });
 
   return (

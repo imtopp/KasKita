@@ -51,12 +51,8 @@ function Dialog({ open, onOpenChange, ...props }: DialogPrimitive.Root.Props) {
     window.addEventListener("popstate", onPopState);
     return () => {
       window.removeEventListener("popstate", onPopState);
-      if (!removedByPop && window.location.href === prevURL) {
-        // Salin state entry asli ke entry palsu dulu sehingga saat di-pop
-        // idx history tidak berubah dan Next router menganggapnya no-op.
-        // Tanpa ini, popstate dari history.back() beradu dengan
-        // router.refresh()/router.push() yang berjalan saat dialog ditutup
-        // (mis. hapus transaksi/kategori) dan memantulkan navigasi.
+      const hrefMatch = window.location.href === prevURL;
+      if (!removedByPop && hrefMatch) {
         window.history.replaceState(prevState, "", prevURL);
         window.history.back();
       }

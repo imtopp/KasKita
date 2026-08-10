@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Loader2, Receipt } from "lucide-react";
 
@@ -84,6 +84,31 @@ export function TransactionsView({
   const [busy, setBusy] = useState(false);
   const [removedIds, setRemovedIds] = useState<Set<string>>(new Set());
 
+  const formOpenRef = useRef(false);
+  const deletingRef = useRef(false);
+  useEffect(() => {
+    formOpenRef.current = formOpen;
+    deletingRef.current = !!deleting;
+  });
+
+  // Refresh harus melewati jendela exit+hold popup dialog (~500ms) dan tidak
+  // boleh jatuh saat dialog terbuka. Kalau refresh jatuh di jendela itu, page
+  // re-render di frame yang sama dengan unmount popup (layer GPU backdrop-blur)
+  // sehingga popup "terlihat muncul lagi" sepersekian detik lalu hilang (gejala
+  // kambuh yang ter-reproduksi hanya dengan throttling + aksi Simpan; Batal aman).
+  // 700ms > exit+hold terpanjang yang teramati (~540ms); kalau ada dialog yang
+  // sedang terbuka saat timer tiba, refresh ditunda lagi.
+  const scheduleRefresh = useCallback(() => {
+    const run = () => {
+      if (formOpenRef.current || deletingRef.current) {
+        setTimeout(run, 700);
+        return;
+      }
+      router.refresh();
+    };
+    setTimeout(run, 700);
+  }, [router]);
+
   const hasActiveFilters = !!(filters.type || filters.category || filters.from || filters.to);
 
   const visibleTransactions = transactions.filter(
@@ -158,7 +183,7 @@ export function TransactionsView({
       next.delete(tx.id);
       return next;
     });
-    router.refresh();
+    scheduleRefresh();
     toast({
       title: "Transaksi dipulihkan",
       description: `${tx.type === "income" ? "Pemasukan" : "Pengeluaran"} ${formatRupiah(tx.amount)} tanggal ${formatDateID(tx.transaction_date)} kembali dicatat.`,
@@ -189,12 +214,7 @@ export function TransactionsView({
       next.add(removed.id);
       return next;
     });
-    // Dialog menutup via history.back() (back-close) yang popstate-nya harus
-    // selesai diproses Next router DULU sebelum refresh. setTimeout ganda ini
-    // menjamin refresh dijalankan setelah task popstate; tanpa ini refresh
-    // sinkron beradu dengan popstate dan Next bisa "restore" ke halaman
-    // sebelumnya (Dashboard).
-    setTimeout(() => setTimeout(() => router.refresh(), 0), 0);
+    scheduleRefresh();
     toast({
       title: "Transaksi dihapus",
       description: `${removed.type === "income" ? "Pemasukan" : "Pengeluaran"} ${formatRupiah(removed.amount)} tanggal ${formatDateID(removed.transaction_date)} dihapus permanen.`,
@@ -475,6 +495,7 @@ export function TransactionsView({
         orgId={orgId}
         categories={categories}
         transaction={editing}
+        onSaved={scheduleRefresh}
       />
 
       <Dialog open={!!deleting} onOpenChange={(open) => !open && setDeleting(null)}>
