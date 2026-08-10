@@ -47,7 +47,7 @@ export function ThemePicker({
     root.dataset.theme = next;
     window.setTimeout(() => {
       root.classList.remove("theme-transitioning");
-    }, 400);
+    }, 500);
     try {
       localStorage.setItem(THEME_KEY, next);
     } catch {

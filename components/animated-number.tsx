@@ -13,7 +13,7 @@ export function AnimatedNumber({ value }: { value: number }) {
     const to = value;
     if (from === to) return;
     const start = performance.now();
-    const duration = 650;
+    const duration = 900;
     let raf = 0;
     const tick = (now: number) => {
       const progress = Math.min(1, (now - start) / duration);

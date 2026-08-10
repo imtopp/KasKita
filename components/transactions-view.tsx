@@ -223,11 +223,11 @@ export function TransactionsView({
       {isPending ? (
         <TransactionListSkeleton />
       ) : transactions.length === 0 ? (
-        <div className="animate-in fade-in-0 rounded-xl border border-dashed px-4 py-10 text-center text-sm text-muted-foreground duration-300">
+        <div className="animate-in slide-in-from-bottom-2 fade-in-0 rounded-xl border border-dashed px-4 py-10 text-center text-sm text-muted-foreground duration-[400ms] ease-out">
           Belum ada transaksi.
         </div>
       ) : (
-        <ul className="animate-in fade-in-0 space-y-3 duration-300">
+        <ul className="animate-in slide-in-from-bottom-2 fade-in-0 space-y-3 duration-[400ms] ease-out">
           {transactions.map((transaction) => (
             <li
               key={transaction.id}

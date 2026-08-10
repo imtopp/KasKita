@@ -75,9 +75,9 @@ export function BottomNav({
               key={item.href}
               href={href}
               className={cn(
-                "flex flex-col items-center justify-center gap-1 text-[10px] transition-colors duration-200 [&_svg]:transition-transform [&_svg]:duration-200 [&_svg]:ease-out",
+                "flex flex-col items-center justify-center gap-1 text-[10px] transition-colors duration-300 [&_svg]:transition-transform [&_svg]:duration-300 [&_svg]:ease-out",
                 active
-                  ? "font-bold text-primary [&_svg]:scale-110"
+                  ? "font-bold text-primary [&_svg]:scale-125"
                   : "text-muted-foreground hover:text-foreground",
               )}
             >
@@ -90,7 +90,7 @@ export function BottomNav({
           type="button"
           onClick={handleLogout}
           disabled={pending}
-          className="flex flex-col items-center justify-center gap-1 text-[10px] text-muted-foreground transition-colors duration-200 hover:text-foreground [&_svg]:transition-transform [&_svg]:duration-200 active:[&_svg]:scale-90"
+          className="flex flex-col items-center justify-center gap-1 text-[10px] text-muted-foreground transition-colors duration-300 hover:text-foreground [&_svg]:transition-transform [&_svg]:duration-300 active:[&_svg]:scale-90"
         >
           {pending ? (
             <Loader2 className="size-5 animate-spin" aria-hidden />
