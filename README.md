@@ -19,6 +19,8 @@ Platform kas organisasi (multi-tenant) — catat pemasukan/pengeluaran untuk RT,
 - Transaksi: catat masuk/keluar, kategori per organisasi, filter, edit, hapus
 - Dashboard (saldo saat ini + ringkasan bulan berjalan dengan saldo awal/akhir) & laporan bulanan (saldo awal/akhir kumulatif + ringkasan per kategori) + **export PDF laporan bulanan ber-logo KasKita** (semua role)
 - Kelola anggota: undang via email, daftarkan manual (password sementara), **tambah anggota yang sudah punya akun**, ubah role, **atur ulang password**, **ganti email**, **nonaktifkan/aktifkan akun**, **putuskan semua sesi**, hapus
+- Pengaturan organisasi (owner/co-owner): ubah nama, ubah slug/URL, hapus organisasi (owner only), ringkasan anggota per role
+- **Perilaku navigasi native mobile**: Back menutup dialog/dropdown lebih dulu; ganti tab dengan dashboard sebagai root (Back selalu kembali ke Dashboard); header menampilkan nama aplikasi + org switcher berikon + tema ikon
 - **Tema per-akun**: 5 tema (Klasik, Kawaii, Ocean, Forest, Sunrise) — pilihan tersimpan di akun
 - Indikator loading di semua aksi (spinner tombol/form) + skeleton & spinner saat pindah menu, serta **skeleton saat ganti filter/pagination (transaksi) & bulan/tahun (laporan)**
 - Input tanggal menampilkan petunjuk format `dd/mm/yyyy` di Android/desktop; di iPhone memakai placeholder tanggal bawaan (overlap dihindari via CSS)

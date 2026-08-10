@@ -120,10 +120,11 @@ Acceptance criteria:
 ## EPIC 5 — Kelola Anggota
 
 ### US-5.1 Undang anggota baru
-**Sebagai** owner, **saya ingin** mengundang orang lain via email untuk gabung organisasi dengan role tertentu.
+**Sebagai** owner/co-owner, **saya ingin** mengundang orang lain via email untuk gabung organisasi dengan role tertentu.
 
 Acceptance criteria:
 - [x] Form: email + pilih role (treasurer/viewer — tidak bisa langsung invite sebagai owner)
+- [x] Owner DAN co-owner sama-sama bisa mengundang (RLS `manage_invitations` = owner/co-owner)
 - [x] Kirim email undangan via Supabase Auth `inviteUserByEmail` (lihat section 6.5 di dokumen arsitektur)
 - [x] Row baru di tabel `invitations` dengan status `pending`
 - [x] Link undangan berisi token, expired setelah 7 hari
@@ -136,7 +137,7 @@ Acceptance criteria:
 - [x] Status invitation berubah jadi `accepted`
 
 ### US-5.4 Daftarkan anggota manual (tanpa email)
-**Sebagai** owner, **saya ingin** langsung membuatkan akun untuk anggota baru tanpa mengirim email undangan, **supaya** tidak terkendala limit email dan bisa langsung kasih kredensial secara manual (WA, chat, tatap muka).
+**Sebagai** owner/co-owner, **saya ingin** langsung membuatkan akun untuk anggota baru tanpa mengirim email undangan, **supaya** tidak terkendala limit email dan bisa langsung kasih kredensial secara manual (WA, chat, tatap muka).
 
 Acceptance criteria:
 - [x] Form terpisah dari "Undang via email": nama, email, password sementara (bisa auto-generate random atau diisi manual oleh owner), pilih role (treasurer/viewer)
@@ -149,9 +150,9 @@ Acceptance criteria:
 
 ### US-5.3 Kelola anggota existing
 Acceptance criteria:
-- [x] Owner bisa lihat daftar anggota + role masing-masing
-- [x] Owner bisa ubah role anggota (kecuali dirinya sendiri jadi non-owner kalau dia satu-satunya owner)
-- [x] Owner bisa hapus anggota dari organisasi
+- [x] Owner/co-owner bisa lihat daftar anggota + role masing-masing
+- [x] Owner/co-owner bisa ubah role anggota (kecuali dirinya sendiri jadi non-owner kalau dia satu-satunya owner; co-owner tidak bisa menyentuh peran owner)
+- [x] Owner/co-owner bisa hapus anggota dari organisasi
 - [x] Menu **Anggota** & **Pengaturan** hanya tampil untuk owner/co-owner — viewer/treasurer tidak melihat menu tersebut di nav, dan membuka URL-nya langsung ditolak (`Forbidden`)
 
 ---

@@ -40,6 +40,8 @@ Contoh pemakaian:
 - **Tema per-akun**: 5 tema (Klasik, Kawaii, Ocean, Forest, Sunrise), pilihan tersimpan di `auth.users.user_metadata.theme` dan ikut user di semua perangkat
 - **Navigasi desktop** (`DesktopNav`, baris kedua header) sebagai pelengkap `BottomNav` mobile
 - **Logo brand** KasKita (dari file logo user) untuk header, auth, dan ikon PWA/favicon
+- **Pengaturan organisasi** (owner/co-owner): ubah nama, ubah slug dengan cek ketersediaan, hapus organisasi (owner only, konfirmasi ketik nama), ringkasan anggota per role
+- **Perilaku navigasi native mobile**: header menampilkan nama aplikasi (KasKita) besar + tema ikon + org switcher berikon&label; Back menutup dialog/dropdown lebih dulu; ganti tab dengan dashboard sebagai root
 
 ---
 
@@ -292,7 +294,7 @@ create policy "manage_invitations" on invitations
 2. Setelah login, aplikasi query `organization_members` untuk ambil daftar organisasi milik user
 3. Jika user cuma punya 1 organisasi → langsung masuk ke dashboard organisasi itu
 4. Jika punya lebih dari 1 → tampilkan **organization switcher** (dropdown di navbar) untuk pilih organisasi aktif
-5. Organisasi aktif tersimpan di **query param URL**, misal: `/org/rt-05-sukamaju/dashboard` — tanpa global state/React context (konsisten dengan 04-coding-standards)
+5. Organisasi aktif tersimpan di **path segment URL**, misal: `/org/rt-05-sukamaju/dashboard` — tanpa global state/React context (konsisten dengan 04-coding-standards)
 6. Setiap request ke Supabase otomatis dibatasi oleh RLS berdasarkan token auth user, jadi walau organisasi aktif ganti-ganti, data tetap aman
 
 ---
@@ -327,8 +329,8 @@ kaskita/
 │   │   ├── layout.tsx                  # wrapper dasar (min-h-dvh)
 │   │   ├── onboarding/page.tsx         # buat organisasi pertama
 │   │   └── org/[slug]/
-│   │       ├── layout.tsx              # header (logo, nama org, org switcher, theme picker, logout)
-│   │       │                           # + DesktopNav (md+) + BottomNav (mobile); cek membership → 403
+│   │       ├── layout.tsx              # header (logo + nama aplikasi "KasKita", org switcher, theme picker ikon, logout)
+│   │       │                           # + DesktopNav (md+) + BottomNav (mobile); cek membership → 403; Back menutup dialog/dropdown dulu (native-like)
 │   │       ├── loading.tsx             # skeleton loading saat pindah menu (Suspense)
 │   │       ├── dashboard/page.tsx      # ringkasan saldo saat ini, bulan berjalan (saldo awal/akhir), transaksi terbaru
 │   │       ├── transactions/page.tsx   # list + filter + form dialog
@@ -392,7 +394,7 @@ Karena target pengguna (bendahara RT, ibu-ibu PKK, dll) kemungkinan besar akses 
 
 ### Prinsip UI
 - Layout mobile-first: desain dari lebar 375px dulu, baru scale up ke tablet/desktop pakai Tailwind breakpoint (`sm:`, `md:`, `lg:`)
-- **Bottom navigation bar di mobile** (bukan sidebar) — tab: Dashboard, Transaksi, Kategori, Laporan, Anggota, Pengaturan, **Keluar**. Di desktop (`md+`), nav yang sama tampil sebagai **baris kedua di header** (`DesktopNav`). Bottom nav fixed di bawah: konten `<main>` wajib punya padding bawah `pb-[calc(5rem+env(safe-area-inset-bottom))]` (desktop `md:pb-6`) supaya card/tombol terakhir tidak tertutup; nav sendiri pakai `pb-[env(safe-area-inset-bottom)]` agar tidak tertutup home indicator iPhone
+- **Bottom navigation bar di mobile** (bukan sidebar) — tab: Dashboard, Transaksi, Laporan, Anggota, Pengaturan, **Keluar** (menu **Kategori** HANYA di `DesktopNav`, tidak tampil di bottom nav mobile). Di desktop (`md+`), nav yang sama tampil sebagai **baris kedua di header** (`DesktopNav`). Bottom nav fixed di bawah: konten `<main>` wajib punya padding bawah `pb-[calc(5rem+env(safe-area-inset-bottom))]` (desktop `md:pb-6`) supaya card/tombol terakhir tidak tertutup; nav sendiri pakai `pb-[env(safe-area-inset-bottom)]` agar tidak tertutup home indicator iPhone. Pindah antar tab memakai aturan **dashboard sebagai root** (`push` dari dashboard ke tab lain, `replace` antar tab non-dashboard dan kembali ke dashboard) sehingga Back dari tab mana pun kembali ke Dashboard.
 - **Tema per-akun**: 5 tema (`data-theme` = `klasik`, `kawaii`, `ocean`, `forest`, `sunrise`) didefinisikan sebagai CSS variables di `app/globals.css`; pilihan user disimpan di `auth.users.user_metadata.theme` dan disinkronkan ke `<html data-theme>` via `ThemeSetter` (dari server) / `ThemePicker` (saat user ganti); head script anti-flash membaca localStorage
 - Form input besar & mudah di-tap (minimum touch target 44x44px)
 - Angka nominal pakai keyboard numerik otomatis (`inputMode="numeric"`)
@@ -461,6 +463,7 @@ Sudah terpasang: `manifest` (Next.js) + service worker (`public/sw.js`) + ikon 1
 NEXT_PUBLIC_SUPABASE_URL=https://xxxxx.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJxxxxx...
 SUPABASE_SERVICE_ROLE_KEY=eyJxxxxx...   # hanya dipakai di server-side, JANGAN expose ke client
+SUPABASE_ACCESS_TOKEN=...               # opsional, untuk tooling: Management API / supabase CLI (bukan dipakai aplikasi)
 ```
 
 Set variabel yang sama di **Vercel → Project Settings → Environment Variables** untuk production.
