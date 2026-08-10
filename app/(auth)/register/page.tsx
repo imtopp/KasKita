@@ -99,7 +99,7 @@ export default function RegisterPage() {
         </CardDescription>
       </CardHeader>
       <form onSubmit={onSubmit} noValidate>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-4 pb-2">
           {serverError && (
             <div className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
               {serverError}
