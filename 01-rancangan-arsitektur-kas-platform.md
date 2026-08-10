@@ -41,7 +41,7 @@ Contoh pemakaian:
 - **Navigasi desktop** (`DesktopNav`, baris kedua header) sebagai pelengkap `BottomNav` mobile
 - **Logo brand** KasKita (dari file logo user) untuk header, auth, dan ikon PWA/favicon
 - **Pengaturan organisasi** (owner/co-owner): ubah nama, ubah slug dengan cek ketersediaan, hapus organisasi (owner only, konfirmasi ketik nama), ringkasan anggota per role
-- **Perilaku navigasi native mobile**: header menampilkan nama aplikasi (KasKita) besar + tema ikon + org switcher berikon&label; Back menutup dialog/dropdown lebih dulu; ganti tab dengan dashboard sebagai root
+- **Perilaku navigasi native mobile**: header menampilkan nama aplikasi (KasKita) besar + tema ikon + org switcher berikon&label; Back menutup dialog lebih dulu (dropdown tidak); ganti tab dengan dashboard sebagai root
 
 ---
 
@@ -330,7 +330,7 @@ kaskita/
 │   │   ├── onboarding/page.tsx         # buat organisasi pertama
 │   │   └── org/[slug]/
 │   │       ├── layout.tsx              # header (logo + nama aplikasi "KasKita", org switcher, theme picker ikon, logout)
-│   │       │                           # + DesktopNav (md+) + BottomNav (mobile); cek membership → 403; Back menutup dialog/dropdown dulu (native-like)
+│   │       │                           # + DesktopNav (md+) + BottomNav (mobile); cek membership → 403; Back menutup dialog dulu (dropdown tidak; native-like)
 │   │       ├── loading.tsx             # skeleton loading saat pindah menu (Suspense)
 │   │       ├── dashboard/page.tsx      # ringkasan saldo saat ini, bulan berjalan (saldo awal/akhir), transaksi terbaru
 │   │       ├── transactions/page.tsx   # list + filter + form dialog

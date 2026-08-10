@@ -52,26 +52,6 @@ function Select<Value, Multiple extends boolean | undefined = false>({
     [isControlled, onOpenChange],
   )
 
-  // Back (Android/iOS) menutup dropdown lebih dulu seperti app native,
-  // bukan langsung kembali ke halaman sebelumnya.
-  React.useEffect(() => {
-    if (!currentOpen) return
-    const prevURL = window.location.href
-    window.history.pushState({ selectOpen: true }, "")
-    let removedByPop = false
-    const onPopState = () => {
-      removedByPop = true
-      handleOpenChange(false)
-    }
-    window.addEventListener("popstate", onPopState)
-    return () => {
-      window.removeEventListener("popstate", onPopState)
-      if (!removedByPop && window.location.href === prevURL) {
-        window.history.back()
-      }
-    }
-  }, [currentOpen, handleOpenChange])
-
   return (
     <SelectPrimitive.Root
       items={items ?? derivedItems}
