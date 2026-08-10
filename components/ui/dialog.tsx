@@ -29,6 +29,7 @@ function Dialog({ open, onOpenChange, ...props }: DialogPrimitive.Root.Props) {
   React.useEffect(() => {
     if (!currentOpen) return;
     const prevURL = window.location.href;
+    const prevState = window.history.state;
     window.history.pushState({ dialogOpen: true }, "");
     let removedByPop = false;
     const onPopState = () => {
@@ -39,6 +40,12 @@ function Dialog({ open, onOpenChange, ...props }: DialogPrimitive.Root.Props) {
     return () => {
       window.removeEventListener("popstate", onPopState);
       if (!removedByPop && window.location.href === prevURL) {
+        // Salin state entry asli ke entry palsu dulu sehingga saat di-pop
+        // idx history tidak berubah dan Next router menganggapnya no-op.
+        // Tanpa ini, popstate dari history.back() beradu dengan
+        // router.refresh()/router.push() yang berjalan saat dialog ditutup
+        // (mis. hapus transaksi/kategori) dan memantulkan navigasi.
+        window.history.replaceState(prevState, "", prevURL);
         window.history.back();
       }
     };
