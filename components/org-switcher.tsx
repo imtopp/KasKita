@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 
 import { usePathname, useRouter } from "next/navigation";
 
-import { Loader2, PlusIcon } from "lucide-react";
+import { Building2, Loader2, PlusIcon } from "lucide-react";
 
 import {
   Select,
@@ -76,7 +76,10 @@ export function OrgSwitcher({
             <span className="truncate">Memuat…</span>
           </span>
         ) : (
-          <SelectValue />
+          <>
+            <Building2 className="size-4 shrink-0" aria-hidden />
+            <SelectValue />
+          </>
         )}
       </SelectTrigger>
       <SelectContent align="end" className="min-w-64">
