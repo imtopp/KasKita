@@ -272,6 +272,21 @@ export function TransactionsView({
         </div>
       </div>
 
+      {hasActiveFilters && (
+        <div className="flex items-center justify-between gap-2">
+          <p className="min-w-0 text-sm text-muted-foreground">
+            Filter aktif sedang menyaring transaksi.
+          </p>
+          <Button
+            variant="outline"
+            className="h-11 shrink-0 px-4 text-base"
+            onClick={resetFilters}
+          >
+            Reset filter
+          </Button>
+        </div>
+      )}
+
       {isPending ? (
         <TransactionListSkeleton />
       ) : transactions.length === 0 ? (
