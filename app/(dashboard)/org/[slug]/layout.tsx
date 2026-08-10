@@ -75,18 +75,27 @@ export default async function OrgLayout({
       <ThemeSetter theme={userTheme} />
       <header className="sticky top-0 z-40 border-b bg-background">
         <div className="mx-auto flex h-14 w-full max-w-5xl items-center gap-2 px-4">
-          <div className="flex min-w-0 items-center gap-2">
-            <BrandLogo size={28} className="ring-0" />
+          <div className="flex min-w-0 flex-1 items-center gap-2">
+            <BrandLogo size={28} className="shrink-0 ring-0" />
             <p className="truncate text-sm font-bold">{activeOrg.name}</p>
           </div>
-          <div className="ml-auto flex items-center gap-2">
+          <OrgSwitcher
+            orgs={orgs ?? []}
+            activeSlug={slug}
+            canCreateOrg={canCreateOrg}
+            triggerClassName="hidden md:inline-flex"
+          />
+          <ThemePicker userTheme={userTheme} />
+          <LogoutButton className="hidden h-9 w-auto shrink-0 px-3 text-sm md:inline-flex" />
+        </div>
+        <div className="border-t bg-background md:hidden">
+          <div className="mx-auto flex h-11 w-full max-w-5xl items-center px-4">
             <OrgSwitcher
               orgs={orgs ?? []}
               activeSlug={slug}
               canCreateOrg={canCreateOrg}
+              triggerClassName="w-full max-w-none sm:max-w-none"
             />
-            <ThemePicker userTheme={userTheme} />
-            <LogoutButton className="hidden h-9 w-auto shrink-0 px-3 text-sm md:inline-flex" />
           </div>
         </div>
         <DesktopNav slug={slug} role={role} />
