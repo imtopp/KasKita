@@ -77,7 +77,9 @@ export default async function OrgLayout({
         <div className="mx-auto flex h-14 w-full max-w-5xl items-center gap-2 px-4">
           <div className="flex min-w-0 flex-1 items-center gap-2">
             <BrandLogo size={28} className="shrink-0 ring-0" />
-            <p className="truncate text-sm font-bold">KasKita</p>
+            <p className="truncate text-lg font-bold md:text-xl">
+              KasKita
+            </p>
           </div>
           <div className="flex shrink-0 items-center gap-2">
             <OrgSwitcher
