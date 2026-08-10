@@ -2,9 +2,7 @@
 
 import { useRouter } from "next/navigation";
 
-import { PlusIcon } from "lucide-react";
-
-import { cn } from "@/lib/utils";
+import { Building2, PlusIcon } from "lucide-react";
 
 import {
   Select,
@@ -27,12 +25,10 @@ export function OrgSwitcher({
   orgs,
   activeSlug,
   canCreateOrg,
-  triggerClassName,
 }: {
   orgs: OrgOption[];
   activeSlug: string;
   canCreateOrg: boolean;
-  triggerClassName?: string;
 }) {
   const router = useRouter();
 
@@ -49,13 +45,11 @@ export function OrgSwitcher({
       }}
     >
       <SelectTrigger
-        className={cn(
-          "h-11 max-w-44 data-[size=default]:h-11 sm:max-w-64",
-          triggerClassName,
-        )}
+        className="h-11 max-w-44 data-[size=default]:h-11 sm:max-w-64"
         aria-label="Ganti organisasi"
       >
-        <SelectValue placeholder="Pilih organisasi" />
+        <Building2 className="size-4 shrink-0 md:hidden" aria-hidden />
+        <SelectValue className="hidden md:block" />
       </SelectTrigger>
       <SelectContent align="end" className="min-w-64">
         {orgs.map((org) => (
