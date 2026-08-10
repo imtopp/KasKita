@@ -49,7 +49,7 @@ export function OrgSwitcher({
         aria-label="Ganti organisasi"
       >
         <Building2 className="size-4 shrink-0 md:hidden" aria-hidden />
-        <SelectValue className="hidden md:block" />
+        <SelectValue className="max-md:sr-only" />
       </SelectTrigger>
       <SelectContent align="end" className="min-w-64">
         {orgs.map((org) => (
