@@ -70,11 +70,13 @@ export function BottomNav({
           const href = `/org/${slug}/${item.href}`;
           const active =
             pathname === href || pathname.startsWith(`${href}/`);
+          const onDashboard = pathname === `/org/${slug}/dashboard`;
+          const replace = item.href === "dashboard" || !onDashboard;
           return (
             <Link
               key={item.href}
               href={href}
-              replace
+              replace={replace}
               className={cn(
                 "flex flex-col items-center justify-center gap-1 text-[10px] transition-colors duration-300 [&_svg]:transition-transform [&_svg]:duration-300 [&_svg]:ease-out",
                 active
