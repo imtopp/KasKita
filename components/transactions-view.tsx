@@ -82,8 +82,13 @@ export function TransactionsView({
   const [deleting, setDeleting] = useState<TransactionRow | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [removedIds, setRemovedIds] = useState<Set<string>>(new Set());
 
   const hasActiveFilters = !!(filters.type || filters.category || filters.from || filters.to);
+
+  const visibleTransactions = transactions.filter(
+    (transaction) => !removedIds.has(transaction.id),
+  );
 
   function applyParams(
     updates: Record<string, string | null>,
@@ -148,6 +153,11 @@ export function TransactionsView({
       });
       return;
     }
+    setRemovedIds((prev) => {
+      const next = new Set(prev);
+      next.delete(tx.id);
+      return next;
+    });
     router.refresh();
     toast({
       title: "Transaksi dipulihkan",
@@ -174,6 +184,11 @@ export function TransactionsView({
       return;
     }
     setDeleting(null);
+    setRemovedIds((prev) => {
+      const next = new Set(prev);
+      next.add(removed.id);
+      return next;
+    });
     // Dialog menutup via history.back() (back-close) yang popstate-nya harus
     // selesai diproses Next router DULU sebelum refresh. setTimeout ganda ini
     // menjamin refresh dijalankan setelah task popstate; tanpa ini refresh
@@ -331,7 +346,7 @@ export function TransactionsView({
 
       {isPending ? (
         <TransactionListSkeleton />
-      ) : transactions.length === 0 ? (
+      ) : visibleTransactions.length === 0 ? (
         <div className="animate-in slide-in-from-bottom-2 fade-in-0 duration-[400ms] ease-out">
           <EmptyState
             icon={Receipt}
@@ -368,7 +383,7 @@ export function TransactionsView({
         </div>
       ) : (
         <ul className="animate-in slide-in-from-bottom-2 fade-in-0 space-y-3 duration-[400ms] ease-out">
-          {transactions.map((transaction) => (
+          {visibleTransactions.map((transaction) => (
             <li
               key={transaction.id}
               className="rounded-xl border bg-card p-4 transition-colors duration-200 active:bg-muted/40"
