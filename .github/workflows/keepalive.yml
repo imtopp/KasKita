@@ -1,0 +1,20 @@
+name: keepalive-supabase
+
+on:
+  schedule:
+    - cron: "0 6 */2 * *"
+  workflow_dispatch:
+
+jobs:
+  keepalive:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase PostgREST
+        env:
+          SUPABASE_URL: ${{ secrets.KASKITA_SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.KASKITA_SUPABASE_ANON_KEY }}
+        run: |
+          curl -fsS -o /dev/null \
+            -H "apikey: ${SUPABASE_ANON_KEY}" \
+            -H "Authorization: Bearer ${SUPABASE_ANON_KEY}" \
+            "${SUPABASE_URL}/rest/v1/organizations?select=id&limit=1"
