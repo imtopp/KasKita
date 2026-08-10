@@ -7,8 +7,51 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { XIcon } from "lucide-react"
 
-function Dialog({ ...props }: DialogPrimitive.Root.Props) {
-  return <DialogPrimitive.Root data-slot="dialog" {...props} />
+type DialogOpenChangeEventDetails = Parameters<
+  NonNullable<DialogPrimitive.Root.Props["onOpenChange"]>
+>[1];
+
+function Dialog({ open, onOpenChange, ...props }: DialogPrimitive.Root.Props) {
+  const isControlled = open !== undefined;
+  const [internalOpen, setInternalOpen] = React.useState(false);
+  const currentOpen = isControlled ? open : internalOpen;
+
+  const handleOpenChange = React.useCallback(
+    (next: boolean, eventDetails?: DialogOpenChangeEventDetails) => {
+      if (!isControlled) setInternalOpen(next);
+      onOpenChange?.(next, eventDetails as DialogOpenChangeEventDetails);
+    },
+    [isControlled, onOpenChange],
+  );
+
+  // Back (Android/iOS) menutup dialog lebih dulu seperti app native,
+  // bukan langsung kembali ke halaman sebelumnya.
+  React.useEffect(() => {
+    if (!currentOpen) return;
+    const prevURL = window.location.href;
+    window.history.pushState({ dialogOpen: true }, "");
+    let removedByPop = false;
+    const onPopState = () => {
+      removedByPop = true;
+      handleOpenChange(false);
+    };
+    window.addEventListener("popstate", onPopState);
+    return () => {
+      window.removeEventListener("popstate", onPopState);
+      if (!removedByPop && window.location.href === prevURL) {
+        window.history.back();
+      }
+    };
+  }, [currentOpen, handleOpenChange]);
+
+  return (
+    <DialogPrimitive.Root
+      data-slot="dialog"
+      open={currentOpen}
+      onOpenChange={handleOpenChange}
+      {...props}
+    />
+  )
 }
 
 function DialogTrigger({ ...props }: DialogPrimitive.Trigger.Props) {

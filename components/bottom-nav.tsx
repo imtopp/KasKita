@@ -74,6 +74,7 @@ export function BottomNav({
             <Link
               key={item.href}
               href={href}
+              replace
               className={cn(
                 "flex flex-col items-center justify-center gap-1 text-[10px] transition-colors duration-300 [&_svg]:transition-transform [&_svg]:duration-300 [&_svg]:ease-out",
                 active
