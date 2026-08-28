@@ -1,20 +1,93 @@
 name: keepalive-supabase
 
+# Kenapa workflow ini ada:
+# Free plan Supabase auto-pause project yang minim aktivitas DB selama ±7 hari.
+# VER-1 (1x/2 hari ke /rest/v1/organizations) TIDAK cukup — project tetap
+# ke-pause 27 Agu 2026 padahal semua ping sukses sejak 10 Agu.
+# VER-2 (sekarang):
+#   - jalan 4x sehari (jeda ±6 jam) → aman jauh di bawah threshold 7 hari,
+#     dan anti bolong saat GH Actions skip/delay job terjadwal
+#   - SELECT sungguhan ke SEMUA tabel public + header `Prefer: count=exact`
+#     (PostgREST menjalankan query plan count(*) tambahan → aktivitas ter-dobel)
+#   - cadangan: probe auth settings + storage buckets (belt-and-braces)
+#   - 401/403 (RLS deny) DIANGGAP aktivitas (SQL tetap dieksekusi murni di
+#     Postgres sebelum row filter); hanya 5xx / connection error (000) yang
+#     fatal → solnya workflow gagal berisik supaya kita sadar duluan
+# Referensi pendekatan: gist "supabase free-tier keepalive that actually works".
+
 on:
   schedule:
-    - cron: "0 6 */2 * *"
+    # 4x sehari pukul 01:17 / 07:17 / 13:17 / 19:17 UTC.
+    # Menit ganjil (17) hindari slot top-of-hour yang sering antri/di-skip GH Actions.
+    - cron: "17 1,7,13,19 * * *"
   workflow_dispatch:
 
 jobs:
-  keepalive:
+  ping:
     runs-on: ubuntu-latest
     steps:
-      - name: Ping Supabase PostgREST
+      - name: real postgres queries via PostgREST
         env:
           SUPABASE_URL: ${{ secrets.KASKITA_SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.KASKITA_SUPABASE_ANON_KEY }}
         run: |
-          curl -fsS -o /dev/null \
-            -H "apikey: ${SUPABASE_ANON_KEY}" \
-            -H "Authorization: Bearer ${SUPABASE_ANON_KEY}" \
-            "${SUPABASE_URL}/rest/v1/organizations?select=id&limit=1"
+          set -uo pipefail
+
+          if [ -z "${SUPABASE_URL:-}" ] || [ -z "${SUPABASE_ANON_KEY:-}" ]; then
+            echo "::error::missing KASKITA_SUPABASE_URL / KASKITA_SUPABASE_ANON_KEY secret"
+            exit 1
+          fi
+
+          AUTH=(-H "apikey: ${SUPABASE_ANON_KEY}" -H "Authorization: Bearer ${SUPABASE_ANON_KEY}")
+
+          # Source of truth: semua tabel di public schema (03-database-migration.sql).
+          # anon tidak bisa auto-discover tabel (root /rest/v1 di-block), jadi
+          # daftar ini kontrak — ingat tambahkan di sini kalau ada tabel baru.
+          TABLES=(organizations organization_members categories transactions invitations)
+
+          FAIL=0
+
+          for table in "${TABLES[@]}"; do
+            echo ""
+            echo ":::: SELECT * FROM public.${table} LIMIT 1"
+            RESPONSE=$(curl -sS -w "\n%{http_code}" \
+              "${SUPABASE_URL}/rest/v1/${table}?select=*&limit=1" \
+              "${AUTH[@]}" \
+              -H "Accept: application/json" \
+              -H "Prefer: count=exact")
+            STATUS=$(printf '%s' "$RESPONSE" | tail -n 1)
+            BODY=$(printf '%s' "$RESPONSE" | sed '$d')
+            echo "status: ${STATUS}"
+            echo "body:   ${BODY}"
+
+            if [ "${STATUS}" -ge 200 ] && [ "${STATUS}" -lt 300 ]; then
+              echo "ok — aktivitas Postgres tercatat (2xx)"
+            elif [ "${STATUS}" = "401" ] || [ "${STATUS}" = "403" ]; then
+              echo "::notice::${table} HTTP ${STATUS} (RLS deny — query tetap dieksekusi, aktivitas tetap tercatat)"
+            else
+              echo "::error::${table} gagal HTTP ${STATUS}"
+              FAIL=1
+            fi
+          done
+
+          # Probe auth — aktivitas sistem auth dicatat terpisah dari PostgREST.
+          echo ""
+          echo ":::: auth settings probe"
+          curl -sS -o /dev/null -w "auth settings status: %{http_code}\n" \
+            "${SUPABASE_URL}/auth/v1/settings" "${AUTH[@]}" || true
+          echo ":::done"
+
+          # Probe storage — akses layanan storage (list buckets).
+          echo ""
+          echo ":::: storage buckets probe"
+          curl -sS -o /dev/null -w "storage buckets status: %{http_code}\n" \
+            "${SUPABASE_URL}/storage/v1/bucket" "${AUTH[@]}" || true
+          echo ":::done"
+
+          if [ "$FAIL" -ne 0 ]; then
+            echo "::error::1+ tabel gagal 5xx/000 — keepalive rusak, cek status project & restore bila ke-pause"
+            exit 1
+          fi
+
+          echo ""
+          echo "keepalive ok — semua tabel public menerima query Postgres sungguhan"
