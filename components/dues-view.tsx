@@ -7,6 +7,8 @@ import {
   ChevronLeft,
   ChevronRight,
   CircleDashed,
+  Download,
+  Loader2,
   Settings2,
   Users,
 } from "lucide-react";
@@ -78,6 +80,7 @@ const STATUS_META: Record<
 
 export function DuesView({
   orgId,
+  orgSlug,
   entityLabel,
   payers,
   duesTransactions,
@@ -87,6 +90,7 @@ export function DuesView({
   canLink,
 }: {
   orgId: string;
+  orgSlug: string;
   entityLabel: string;
   payers: PayerRow[];
   duesTransactions: DuesTx[];
@@ -103,6 +107,8 @@ export function DuesView({
   const [manageOpen, setManageOpen] = useState(false);
   const [manageSession, setManageSession] = useState(0);
   const [payersState, setPayersState] = useState<PayerRow[]>(payers);
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
 
   const target = useMemo(
     () =>
@@ -221,6 +227,45 @@ export function DuesView({
     setPeriodYear(year);
   }
 
+  async function exportDuesPdf() {
+    if (exporting) return;
+    setExporting(true);
+    setExportError(null);
+    try {
+      const response = await fetch(
+        `/api/reports/dues?orgId=${encodeURIComponent(orgId)}&year=${periodYear}`,
+        { cache: "no-store" },
+      );
+      if (!response.ok) {
+        let message = "Gagal mengunduh PDF. Coba lagi.";
+        try {
+          const body = await response.json();
+          if (typeof body?.error === "string") message = body.error;
+        } catch {
+          // Abaikan, pakai pesan default.
+        }
+        throw new Error(message);
+      }
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = `laporan-iuran-${orgSlug}-${periodYear}.pdf`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      setExportError(
+        error instanceof Error
+          ? error.message
+          : "Gagal mengunduh PDF. Coba lagi.",
+      );
+    } finally {
+      setExporting(false);
+    }
+  }
+
   const history = historyPayer ? txByPayer.get(historyPayer.id) ?? [] : [];
 
   return (
@@ -297,16 +342,35 @@ export function DuesView({
         >
           <ChevronRight className="size-5" aria-hidden />
         </Button>
-        {activePayers.length > 0 && (
-          <label className="ml-auto flex shrink-0 cursor-pointer items-center gap-2 text-sm text-muted-foreground">
-            <input
-              type="checkbox"
-              checked={showInactive}
-              onChange={(event) => setShowInactive(event.target.checked)}
-              className="size-4"
-            />
-            Tampilkan nonaktif
-          </label>
+        <div className="ml-auto flex shrink-0 flex-wrap items-center gap-2">
+          <Button
+            variant="outline"
+            onClick={exportDuesPdf}
+            disabled={exporting}
+          >
+            {exporting ? (
+              <Loader2 className="size-4 animate-spin" aria-hidden />
+            ) : (
+              <Download className="size-4" aria-hidden />
+            )}
+            {exporting ? "Membuat PDF…" : `Export PDF ${periodYear}`}
+          </Button>
+          {activePayers.length > 0 && (
+            <label className="flex cursor-pointer items-center gap-2 text-sm text-muted-foreground">
+              <input
+                type="checkbox"
+                checked={showInactive}
+                onChange={(event) => setShowInactive(event.target.checked)}
+                className="size-4"
+              />
+              Tampilkan nonaktif
+            </label>
+          )}
+        </div>
+        {exportError && (
+          <p className="w-full text-sm font-medium text-destructive">
+            {exportError}
+          </p>
         )}
       </div>
 

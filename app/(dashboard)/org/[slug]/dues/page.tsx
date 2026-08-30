@@ -102,6 +102,7 @@ export default async function DuesPage({
   return (
     <DuesView
       orgId={org.id}
+      orgSlug={org.slug}
       entityLabel={org.dues_entity_label}
       payers={payersRes.data ?? []}
       duesTransactions={duesTransactions}

@@ -215,6 +215,7 @@ Fitur berikut sudah dikerjakan atas permintaan eksplisit user dan menjadi bagian
   - [x] Kelola unit pembayar oleh owner/co-owner/treasurer: tambah, ganti nama, **nonaktifkan** (soft — tanpa hapus permanen agar riwayat tetap utuh), dan **link akun → unit** (anggota memilih unitnya sendiri via dropdown akun)
   - [x] Entri menu Iuran: kartu pintasan di Dashboard (mobile) + item di `DesktopNav` (desktop) — bukan di bottom nav
   - [x] RLS `dues_payers`: semua anggota boleh lihat; insert/update hanya owner/co-owner/treasurer; tidak ada policy DELETE
+- **Export PDF laporan iuran tahunan** (semua role): tombol "Export PDF {tahun}" di halaman Iuran (menggunakan tahun yang sedang dipilih di nav periode) mengunduh `laporan-iuran-<slug>-<tahun>.pdf` dengan ringkasan tahunan (jumlah unit aktif, unit lunas sepanjang tahun, target tahunan, total iuran diterima, sisa belum terkumpul), rekap per kategori iuran (target/bulan, target/tahun, terkumpul, sisa), matriks unit × 12 bulan (sel nominal: hijau = lunas, oranye `*` = cicil, `—` = belum; kolom total per unit), dan daftar "Belum Lunas per unit" untuk pengingat. Dihasilkan server-side via `GET /api/reports/dues?orgId&year` (pdfmake, `Cache-Control: no-store`), otorisasi semua role.
 
 
 
