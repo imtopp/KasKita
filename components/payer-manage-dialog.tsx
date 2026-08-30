@@ -1,12 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ArrowLeft, KeyRound, Loader2, Pencil, Plus, Power } from "lucide-react";
+import { KeyRound, Loader2, Pencil, Plus, Power } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
-  DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -416,16 +415,6 @@ export function PayerManageDialog({
 
         {view === "accounts" && (
           <div className="space-y-4">
-            <Button
-              type="button"
-              variant="ghost"
-              className="h-10 gap-1 px-2 -ml-2 text-sm"
-              onClick={() => setMode({ view: "list" })}
-              disabled={busy}
-            >
-              <ArrowLeft className="size-4" aria-hidden />
-              Kembali
-            </Button>
             <p className="text-sm">
               Tautkan akun anggota ke{" "}
               <span className="font-semibold">{viewPayer?.name}</span>. Akun
@@ -507,13 +496,15 @@ export function PayerManageDialog({
               </ul>
             )}
             <DialogFooter>
-              <DialogClose
-                render={
-                  <Button type="button" variant="outline" className="h-11" />
-                }
+              <Button
+                type="button"
+                variant="outline"
+                className="h-11"
+                onClick={() => setMode({ view: "list" })}
+                disabled={busy}
               >
-                Tutup
-              </DialogClose>
+                Batal
+              </Button>
               <Button
                 type="button"
                 className="h-11 text-base"
