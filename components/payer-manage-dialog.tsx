@@ -350,12 +350,6 @@ export function PayerManageDialog({
                 ))}
               </ul>
             )}
-            {!canLink && (
-              <p className="text-xs text-muted-foreground">
-                Menautkan {labelLower} ke akun anggota hanya bisa dilakukan
-                owner/co-owner.
-              </p>
-            )}
           </div>
         ) : null}
 
