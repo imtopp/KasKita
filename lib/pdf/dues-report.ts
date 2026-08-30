@@ -97,27 +97,7 @@ export async function generateDuesReportPdf(params: {
     }
   }
 
-  let collectedYear = 0;
-  let lunasYear = 0;
-  for (const payer of payers) {
-    collectedYear += paidTotal.get(payer.id) ?? 0;
-    const monthArr = paidMonth.get(payer.id);
-    const lunasAll =
-      monthArr !== undefined &&
-      monthArr.every((amount) =>
-        monthlyTarget > 0 ? amount >= monthlyTarget : amount > 0,
-      );
-    if (lunasAll) lunasYear += 1;
-  }
-
-  const targetYear = monthlyTarget * 12 * payers.length;
-  const remainingYear = Math.max(0, targetYear - collectedYear);
-
   const OTHER_BUCKET = "__other__";
-  const catTargets = new Map<string, number>();
-  for (const category of categoriesWithTarget) {
-    catTargets.set(category.id, category.dues_default_amount ?? 0);
-  }
 
   const paidMonthPerCat = new Map<string, Map<string, number[]>>();
   for (const payer of payers) {
@@ -144,6 +124,33 @@ export async function generateDuesReportPdf(params: {
     }
     bucketArr[monthIndex] += Number(tx.amount);
   }
+
+  let collectedYear = 0;
+  let lunasYear = 0;
+  for (const payer of payers) {
+    collectedYear += paidTotal.get(payer.id) ?? 0;
+    const catMap = paidMonthPerCat.get(payer.id) ?? new Map();
+    let lunasAll: boolean;
+    if (categoriesWithTarget.length === 0) {
+      lunasAll = (paidMonth.get(payer.id) ?? Array(12).fill(0)).every(
+        (amount) => amount > 0,
+      );
+    } else {
+      lunasAll = true;
+      for (const category of categoriesWithTarget) {
+        const target = category.dues_default_amount ?? 0;
+        const monthArr = catMap.get(category.id) ?? Array(12).fill(0);
+        if (monthArr.some((amount: number) => amount < target)) {
+          lunasAll = false;
+          break;
+        }
+      }
+    }
+    if (lunasAll) lunasYear += 1;
+  }
+
+  const targetYear = monthlyTarget * 12 * payers.length;
+  const remainingYear = Math.max(0, targetYear - collectedYear);
 
   const COLUMN_COUNT = 14; // nama + 12 bulan + total
   const matrixRows: TableCell[][] = [];
@@ -258,23 +265,29 @@ export async function generateDuesReportPdf(params: {
     }),
   ];
 
-  const outstanding: Array<{ name: string; detail: string }> = [];
-  if (monthlyTarget > 0) {
-    for (const payer of payers) {
-      const monthArr = paidMonth.get(payer.id) ?? [];
+  const outstanding: Array<{ name: string; lines: string[] }> = [];
+  for (const payer of payers) {
+    const catMap = paidMonthPerCat.get(payer.id) ?? new Map();
+    const lines: string[] = [];
+    for (const category of categoriesWithTarget) {
+      const target = category.dues_default_amount ?? 0;
+      const monthArr = catMap.get(category.id) ?? Array(12).fill(0);
       const parts: string[] = [];
       for (let index = 0; index < 12; index += 1) {
         const amount = monthArr[index] ?? 0;
-        if (amount >= monthlyTarget) continue;
+        if (amount >= target) continue;
         parts.push(
           amount > 0
-            ? `${MONTH_SHORT[index]} (cicil ${formatRupiah(amount)}, sisa ${formatRupiah(monthlyTarget - amount)})`
-            : `${MONTH_SHORT[index]} ${formatRupiah(monthlyTarget)}`,
+            ? `${MONTH_SHORT[index]} (cicil ${formatRupiah(amount)}, sisa ${formatRupiah(target - amount)})`
+            : `${MONTH_SHORT[index]} ${formatRupiah(target)}`,
         );
       }
       if (parts.length > 0) {
-        outstanding.push({ name: payer.name, detail: parts.join(", ") });
+        lines.push(`${category.name}: ${parts.join(", ")}`);
       }
+    }
+    if (lines.length > 0) {
+      outstanding.push({ name: payer.name, lines });
     }
   }
 
@@ -365,16 +378,17 @@ export async function generateDuesReportPdf(params: {
       ...(outstanding.length > 0
         ? [
             {
-              text: "Belum Lunas per " + entityLabel,
+              text: `Belum Lunas per ${entityLabel} (per Kategori)`,
               style: "section" as const,
             },
             {
               ul: outstanding.map(
                 (item) => ({
-                  text: [
+                  stack: [
                     { text: item.name, bold: true },
-                    { text: ` — ${item.detail}` },
+                    ...item.lines.map((line) => ({ text: `  ${line}` })),
                   ],
+                  margin: [0, 0, 0, 3] as [number, number, number, number],
                 }),
               ),
             },
