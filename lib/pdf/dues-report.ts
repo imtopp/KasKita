@@ -60,6 +60,10 @@ export async function generateDuesReportPdf(params: {
   const { orgName, entityLabel, year, payers, duesCategories, transactions } =
     params;
 
+  const now = new Date();
+  const isCurrentYear = year === now.getFullYear();
+  const elapsedMonths = isCurrentYear ? now.getMonth() + 1 : 12;
+
   const categoriesWithTarget = duesCategories.filter(
     (category) => (category.dues_default_amount ?? 0) > 0,
   );
@@ -132,15 +136,27 @@ export async function generateDuesReportPdf(params: {
     const catMap = paidMonthPerCat.get(payer.id) ?? new Map();
     let lunasAll: boolean;
     if (categoriesWithTarget.length === 0) {
-      lunasAll = (paidMonth.get(payer.id) ?? Array(12).fill(0)).every(
-        (amount) => amount > 0,
-      );
+      const monthArr = paidMonth.get(payer.id) ?? Array(12).fill(0);
+      lunasAll = true;
+      for (let index = 0; index < elapsedMonths; index += 1) {
+        if ((monthArr[index] ?? 0) <= 0) {
+          lunasAll = false;
+          break;
+        }
+      }
     } else {
       lunasAll = true;
       for (const category of categoriesWithTarget) {
         const target = category.dues_default_amount ?? 0;
         const monthArr = catMap.get(category.id) ?? Array(12).fill(0);
-        if (monthArr.some((amount: number) => amount < target)) {
+        let catLunas = true;
+        for (let index = 0; index < elapsedMonths; index += 1) {
+          if ((monthArr[index] ?? 0) < target) {
+            catLunas = false;
+            break;
+          }
+        }
+        if (!catLunas) {
           lunasAll = false;
           break;
         }
@@ -273,7 +289,7 @@ export async function generateDuesReportPdf(params: {
       const target = category.dues_default_amount ?? 0;
       const monthArr = catMap.get(category.id) ?? Array(12).fill(0);
       const parts: string[] = [];
-      for (let index = 0; index < 12; index += 1) {
+      for (let index = 0; index < elapsedMonths; index += 1) {
         const amount = monthArr[index] ?? 0;
         if (amount >= target) continue;
         parts.push(
@@ -294,7 +310,9 @@ export async function generateDuesReportPdf(params: {
   const summaryBody: TableCell[][] = [
     [`Jumlah ${entityLabel.toLowerCase()} aktif`, { text: String(payers.length), alignment: "right" }],
     [
-      `${entityLabel} lunas sepanjang tahun`,
+      isCurrentYear
+        ? `${entityLabel} lunas s.d. bulan berjalan`
+        : `${entityLabel} lunas sepanjang tahun`,
       { text: String(lunasYear), alignment: "right" },
     ],
     ...(monthlyTarget > 0
@@ -393,7 +411,14 @@ export async function generateDuesReportPdf(params: {
               ),
             },
           ]
-        : [{ text: `Semua ${entityLabel.toLowerCase()} aktif sudah lunas tahun ${year}.`, style: "muted" }]),
+        : [
+            {
+              text: isCurrentYear
+                ? `Semua ${entityLabel.toLowerCase()} aktif sudah lunas untuk semua bulan yang sudah berjalan di tahun ${year}.`
+                : `Semua ${entityLabel.toLowerCase()} aktif sudah lunas tahun ${year}.`,
+              style: "muted",
+            },
+          ]),
     ],
     styles: {
       title: { fontSize: 18, bold: true, margin: [0, 0, 0, 2] },
