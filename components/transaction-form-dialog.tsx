@@ -58,7 +58,7 @@ function addMonths(period: string, delta: number): string {
   const total = year * 12 + (month - 1) + delta;
   const nextYear = Math.floor(total / 12);
   const nextMonth = (total % 12) + 1;
-  return `${nextYear}-${String(nextMonth).padStart(2, "0")}`;
+  return `${nextYear}-${String(nextMonth).padStart(2, "0")}-01`;
 }
 
 function clampInt(value: string, min: number, max: number): number {
@@ -289,6 +289,11 @@ export function TransactionFormDialog({
       }
       duesPayerIdValue = data.dues_payer_id!;
       period = data.dues_period!;
+      // DB menyimpan `dues_period` sebagai date (harus "YYYY-MM-DD", hari-1
+      // bulan). Form memakai "YYYY-MM"; saat edit nilainya sudah "YYYY-MM-DD".
+      if (period.length === 7) {
+        period = `${period}-01`;
+      }
     }
 
     if (!(perMonth > 0)) {
