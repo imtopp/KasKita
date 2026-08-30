@@ -693,6 +693,7 @@ export function TransactionFormDialog({
                 <Label>Periode (untuk bulan apa)</Label>
                 <div className="grid grid-cols-2 gap-2">
                   <Select
+                    disabled={!duesPayerId}
                     value={periodMonth ? String(periodMonth) : "__none__"}
                     onValueChange={(value: string | null) => {
                       if (!value || value === "__none__" || !periodYear) return;
@@ -727,6 +728,7 @@ export function TransactionFormDialog({
                     </SelectContent>
                   </Select>
                   <Select
+                    disabled={!duesPayerId}
                     value={periodYear ? String(periodYear) : "__none__"}
                     onValueChange={(value: string | null) => {
                       if (!value || value === "__none__") return;
@@ -758,11 +760,21 @@ export function TransactionFormDialog({
                     {errors.dues_period.message}
                   </p>
                 )}
-                {!transaction && periodYear !== null && (
+                {!transaction && (
                   <p className="text-xs text-muted-foreground">
-                    Bulan yang sudah lunas untuk {entityLabel.toLowerCase()}{" "}
-                    terpilih dikunci; bulan yang baru dicicil tetap bisa
-                    ditutup (sisa pembayaran akan didahulukan untuk menutupnya).
+                    {duesPayerId ? (
+                      <>
+                        Bulan yang sudah lunas untuk{" "}
+                        {entityLabel.toLowerCase()} terpilih dikunci; bulan yang
+                        baru dicicil tetap bisa ditutup (sisa pembayaran
+                        didahulukan menutupnya).
+                      </>
+                    ) : (
+                      <>
+                        Pilih {entityLabel.toLowerCase()} dulu untuk memilih
+                        periode.
+                      </>
+                    )}
                   </p>
                 )}
               </div>
