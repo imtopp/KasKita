@@ -74,7 +74,7 @@ Acceptance criteria:
 
 Acceptance criteria:
 - [x] Form: jenis (income/expense), kategori (dropdown dari `categories` organisasi aktif), nominal, tanggal (default hari ini), deskripsi (opsional)
-- [ ] Upload foto bukti (opsional) — belum dikerjakan; kolom `receipt_url` menganggur
+- [x] Upload foto bukti (opsional) — owner/co-owner/treasurer bisa melampirkan foto bukti ke transaksi; tersimpan di Supabase Storage bucket `receipts` (private, path `receipts/<org_id>/<uuid>.jpg`), kompresi otomatis di client (maks dimensi 1600px, JPEG), batas 5 MB per file; semua anggota org (termasuk viewer) bisa melihat bukti via signed URL; file ikut terhapus saat transaksi dihapus / foto diganti / org dihapus (anti file yatim); file TIDAK wajib (opsional).
 - [x] Nominal harus > 0, validasi di frontend DAN mengandalkan `check` constraint di database sebagai lapisan kedua
 - [x] Setelah submit sukses → transaksi muncul di list, saldo di dashboard ter-update
 - [x] **Role `viewer` TIDAK BOLEH bisa akses form ini** — tombol "tambah transaksi" disembunyikan/disabled untuk viewer, DAN backend/RLS harus menolak insert kalau tetap dicoba lewat API langsung

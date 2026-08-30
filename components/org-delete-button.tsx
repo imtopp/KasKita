@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { deleteOrgReceipts } from "@/lib/receipts";
 import { createClient } from "@/lib/supabase/client";
 
 export function OrgDeleteButton({
@@ -39,6 +40,16 @@ export function OrgDeleteButton({
     if (!matches || busy) return;
     setBusy(true);
     setError(null);
+
+    // Hapus dulu semua file bukti milik org (biar tidak ada file yatim yang
+    // numpuk sampai limit storage). Kalau gagal, batalkan hapus org.
+    try {
+      await deleteOrgReceipts(supabase, orgId);
+    } catch {
+      setBusy(false);
+      setError("Gagal menghapus file bukti organisasi. Coba lagi.");
+      return;
+    }
 
     const { error } = await supabase
       .from("organizations")

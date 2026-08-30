@@ -57,7 +57,7 @@ export default async function TransactionsPage({
   let query = supabase
     .from("transactions")
     .select(
-      "id, organization_id, category_id, type, amount, description, transaction_date, created_by, categories(name)",
+      "id, organization_id, category_id, type, amount, description, transaction_date, receipt_url, created_by, categories(name)",
       { count: "exact" },
     )
     .eq("organization_id", org.id);
@@ -99,6 +99,7 @@ export default async function TransactionsPage({
       amount: number;
       description: string | null;
       transaction_date: string;
+      receipt_url: string | null;
       created_by: string;
       categories: { name: string } | { name: string }[];
     }) => ({

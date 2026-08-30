@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { Loader2, Receipt } from "lucide-react";
+import { Loader2, Paperclip, Receipt } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { DateInput } from "@/components/date-input";
@@ -27,7 +27,9 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/components/ui/toast";
+import { ReceiptViewDialog } from "@/components/receipt-view-dialog";
 import { TransactionFormDialog } from "@/components/transaction-form-dialog";
+import { deleteReceipt } from "@/lib/receipts";
 import { createClient } from "@/lib/supabase/client";
 import type { CategoryOption, TransactionRow } from "@/lib/types";
 import {
@@ -80,6 +82,9 @@ export function TransactionsView({
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<TransactionRow | null>(null);
   const [deleting, setDeleting] = useState<TransactionRow | null>(null);
+  const [viewingReceipt, setViewingReceipt] = useState<TransactionRow | null>(
+    null,
+  );
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [removedIds, setRemovedIds] = useState<Set<string>>(new Set());
@@ -214,6 +219,9 @@ export function TransactionsView({
       next.add(removed.id);
       return next;
     });
+    // File bukti ikut dihapus dari Storage (auto-delete). Best-effort:
+    // gagal hapus file tidak menggagalkan alur karena transaksi sudah terhapus.
+    void deleteReceipt(supabase, removed.receipt_url);
     scheduleRefresh();
     toast({
       title: "Transaksi dihapus",
@@ -421,6 +429,17 @@ export function TransactionsView({
                   <p className="text-xs text-muted-foreground">
                     {formatDateID(transaction.transaction_date)}
                   </p>
+                  {transaction.receipt_url && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="mt-1 h-9 gap-1 px-3 text-xs"
+                      onClick={() => setViewingReceipt(transaction)}
+                    >
+                      <Paperclip className="size-3.5" aria-hidden />
+                      Lihat bukti
+                    </Button>
+                  )}
                 </div>
                 <div className="flex shrink-0 flex-col items-end gap-2">
                   <p
@@ -496,6 +515,12 @@ export function TransactionsView({
         categories={categories}
         transaction={editing}
         onSaved={scheduleRefresh}
+      />
+
+      <ReceiptViewDialog
+        open={!!viewingReceipt}
+        onOpenChange={(open) => !open && setViewingReceipt(null)}
+        receiptUrl={viewingReceipt?.receipt_url ?? null}
       />
 
       <Dialog open={!!deleting} onOpenChange={(open) => !open && setDeleting(null)}>

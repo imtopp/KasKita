@@ -284,6 +284,30 @@ create policy "manage_invitations" on invitations
   for all using (get_org_role(organization_id) in ('owner', 'co_owner'));
 ```
 
+**RLS Storage — upload bukti foto transaksi (US-3.1, via migration `202608300001_receipt_storage_policies.sql`):** bucket `receipts` private (dibuat manual di Dashboard), path objek `receipts/<organization_id>/<uuid>.jpg`. Policy di `storage.objects` memakai helper `is_org_member`/`get_org_role` dari folder pertama di path — jadi isolasi data tetap di level database:
+
+```sql
+-- batas 5 MB/file + hanya gambar (update storage.buckets)
+-- SELECT : semua anggota org bisa baca (lihat bukti)
+create policy "receipts_select_org_member"
+on storage.objects for select
+using (bucket_id = 'receipts' and is_org_member((storage.foldername(name))[1]::uuid));
+
+-- INSERT : owner/co-owner/treasurer (pengelola kas)
+create policy "receipts_insert_org_manage"
+on storage.objects for insert
+with check (bucket_id = 'receipts'
+  and get_org_role((storage.foldername(name))[1]::uuid) in ('owner', 'co_owner', 'treasurer'));
+
+-- DELETE : owner/co-owner/treasurer (hapus file saat transaksi/org dihapus)
+create policy "receipts_delete_org_manage"
+on storage.objects for delete
+using (bucket_id = 'receipts'
+  and get_org_role((storage.foldername(name))[1]::uuid) in ('owner', 'co_owner', 'treasurer'));
+```
+
+Ditampilkan via **signed URL** (`createSignedUrl`, berlaku 1 jam) agar file private tidak terekspos ke publik. Klien mengompres foto sebelum upload (maks dimensi 1600px, JPEG) sehingga hemat kuota 1 GB free plan; file ikut terhapus saat transaksi dihapus / foto diganti / org dihapus (mencegah file yatim memenuhi limit storage).
+
 > Prinsip pentingnya: **jangan pernah filter `organization_id` hanya di kode frontend/backend**. RLS di atas jadi jaring pengaman terakhir — walau ada bug di aplikasi, database tetap menolak akses data lintas-organisasi.
 
 ---
@@ -428,7 +452,7 @@ Sudah terpasang: `manifest` (Next.js) + service worker (`public/sw.js`) + ikon 1
 - [x] Form tambah transaksi (income/expense) + kategori
 - [x] List transaksi dengan filter (tanggal, kategori, jenis)
 - [x] Edit & hapus transaksi
-- [ ] Upload bukti foto ke Supabase Storage  *(belum dikerjakan — opsional)*
+- [x] Upload bukti foto ke Supabase Storage (`receipts/<org_id>/<uuid>.jpg`, RLS per org, signed URL, kompresi client-side, auto-delete)
 - [x] Kartu ringkasan saldo di dashboard
 
 ### Fase 3 — Laporan (2-3 hari)

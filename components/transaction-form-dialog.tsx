@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
-import { Loader2 } from "lucide-react";
+import { ImagePlus, Loader2, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { DateInput } from "@/components/date-input";
@@ -24,6 +24,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  compressReceiptImage,
+  deleteReceipt,
+  receiptFileError,
+  receiptPath,
+  uploadReceiptError,
+} from "@/lib/receipts";
 import { createClient } from "@/lib/supabase/client";
 import {
   transactionSchema,
@@ -58,6 +65,32 @@ export function TransactionFormDialog({
   const supabase = createClient();
   const [serverError, setServerError] = useState<string | null>(null);
 
+  // State foto bukti.
+  const [receiptFile, setReceiptFile] = useState<File | null>(null);
+  const [receiptPreview, setReceiptPreview] = useState<string | null>(null);
+  const [existingPreview, setExistingPreview] = useState<string | null>(null);
+  const [removeReceipt, setRemoveReceipt] = useState(false);
+  const [receiptError, setReceiptError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const previewUrlRef = useRef<string | null>(null);
+
+  const setPreview = useCallback((url: string | null) => {
+    if (previewUrlRef.current && previewUrlRef.current !== url) {
+      URL.revokeObjectURL(previewUrlRef.current);
+    }
+    previewUrlRef.current = url;
+    setReceiptPreview(url);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (previewUrlRef.current) {
+        URL.revokeObjectURL(previewUrlRef.current);
+        previewUrlRef.current = null;
+      }
+    };
+  }, []);
+
   const {
     register,
     handleSubmit,
@@ -79,6 +112,11 @@ export function TransactionFormDialog({
   useEffect(() => {
     if (open) {
       setServerError(null);
+      setReceiptError(null);
+      setReceiptFile(null);
+      setRemoveReceipt(false);
+      setExistingPreview(null);
+      setPreview(null);
       reset(
         transaction
           ? {
@@ -96,8 +134,25 @@ export function TransactionFormDialog({
               description: "",
             },
       );
+
+      if (transaction?.receipt_url) {
+        let cancelled = false;
+        const client = createClient();
+        client.storage
+          .from("receipts")
+          .createSignedUrl(transaction.receipt_url, 3600)
+          .then(({ data }) => {
+            if (!cancelled && data?.signedUrl) {
+              setExistingPreview(data.signedUrl);
+            }
+          })
+          .catch(() => {});
+        return () => {
+          cancelled = true;
+        };
+      }
     }
-  }, [open, transaction, reset]);
+  }, [open, transaction, reset, setPreview]);
 
   const type = watch("type");
   const categoryId = watch("category_id");
@@ -113,6 +168,28 @@ export function TransactionFormDialog({
       setValue("category_id", "", { shouldValidate: true });
     }
   }, [categoryId, type, categories, setValue]);
+
+  async function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+
+    const validationError = receiptFileError(file);
+    if (validationError) {
+      setReceiptError(validationError);
+      return;
+    }
+    setReceiptError(null);
+    try {
+      const compressed = await compressReceiptImage(file);
+      setPreview(URL.createObjectURL(compressed));
+      setReceiptFile(compressed);
+    } catch (error) {
+      setReceiptError(
+        error instanceof Error ? error.message : "Gagal memuat foto.",
+      );
+    }
+  }
 
   const onSubmit = handleSubmit(async (values) => {
     setServerError(null);
@@ -147,6 +224,30 @@ export function TransactionFormDialog({
       return;
     }
 
+    const existingReceipt = transaction?.receipt_url ?? null;
+    let receiptUrl: string | null = existingReceipt;
+    let uploadedPath: string | null = null;
+    let oldToDelete: string | null = null;
+
+    if (receiptFile) {
+      uploadedPath = receiptPath(orgId);
+      const { error: uploadError } = await supabase.storage
+        .from("receipts")
+        .upload(uploadedPath, receiptFile, {
+          contentType: receiptFile.type || "image/jpeg",
+          upsert: false,
+        });
+      if (uploadError) {
+        setServerError(uploadReceiptError(uploadError));
+        return;
+      }
+      receiptUrl = uploadedPath;
+      oldToDelete = existingReceipt;
+    } else if (removeReceipt && existingReceipt) {
+      receiptUrl = null;
+      oldToDelete = existingReceipt;
+    }
+
     if (transaction) {
       const { error } = await supabase
         .from("transactions")
@@ -156,9 +257,11 @@ export function TransactionFormDialog({
           amount,
           transaction_date: parsed.data.transaction_date,
           description: parsed.data.description || null,
+          receipt_url: receiptUrl,
         })
         .eq("id", transaction.id);
       if (error) {
+        if (uploadedPath) void deleteReceipt(supabase, uploadedPath);
         setServerError(errorMessage(error));
         return;
       }
@@ -172,12 +275,20 @@ export function TransactionFormDialog({
           amount,
           transaction_date: parsed.data.transaction_date,
           description: parsed.data.description || null,
+          receipt_url: receiptUrl,
           created_by: user.id,
         });
       if (error) {
+        if (uploadedPath) void deleteReceipt(supabase, uploadedPath);
         setServerError(errorMessage(error));
         return;
       }
+    }
+
+    // File lama hanya dihapus SETELAH update/insert sukses — kalau gagal,
+    // bukti lama tetap aman.
+    if (oldToDelete && oldToDelete !== receiptUrl) {
+      void deleteReceipt(supabase, oldToDelete);
     }
 
     onOpenChange(false);
@@ -302,6 +413,89 @@ export function TransactionFormDialog({
               <p className="text-sm text-destructive">
                 {errors.description.message}
               </p>
+            )}
+          </div>
+          <div className="space-y-2">
+            <Label>Foto bukti (opsional)</Label>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleFileChange}
+            />
+            {receiptPreview ? (
+              <div className="flex flex-wrap items-center gap-3">
+                {/* eslint-disable-next-line @next/next/no-img-element -- pratinjau file lokal (blob URL) */}
+                <img
+                  src={receiptPreview}
+                  alt="Pratinjau foto bukti"
+                  className="h-16 w-16 rounded-lg border object-cover"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-11 px-3 text-sm"
+                  onClick={() => {
+                    setReceiptFile(null);
+                    setPreview(null);
+                  }}
+                >
+                  <X aria-hidden className="size-4" />
+                  Hapus pilihan
+                </Button>
+              </div>
+            ) : existingPreview && !removeReceipt ? (
+              <div className="flex flex-wrap items-center gap-3">
+                {/* eslint-disable-next-line @next/next/no-img-element -- URL signed hasil createSignedUrl */}
+                <img
+                  src={existingPreview}
+                  alt="Foto bukti saat ini"
+                  className="h-16 w-16 rounded-lg border object-cover"
+                />
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-11 px-3 text-sm"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <ImagePlus aria-hidden className="size-4" />
+                    Ganti
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-11 px-3 text-sm text-destructive"
+                    onClick={() => setRemoveReceipt(true)}
+                  >
+                    Hapus foto
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-11"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <ImagePlus aria-hidden className="size-4" />
+                  Pilih foto
+                </Button>
+                <p className="mt-1.5 text-xs text-muted-foreground">
+                  JPG/PNG/HEIC, otomatis dikompres, maks 5 MB.
+                </p>
+              </div>
+            )}
+            {removeReceipt && existingPreview && (
+              <p className="text-xs text-muted-foreground">
+                Foto lama akan dihapus saat kamu menyimpan.
+              </p>
+            )}
+            {receiptError && (
+              <p className="text-sm text-destructive">{receiptError}</p>
             )}
           </div>
           <DialogFooter>

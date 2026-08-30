@@ -124,6 +124,7 @@ export type TransactionRow = {
   amount: number;
   description: string | null;
   transaction_date: string;
+  receipt_url: string | null;
   created_by: string;
   categories: { name: string } | null;
 };
