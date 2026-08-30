@@ -291,7 +291,7 @@ export function DuesView({
         )}
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 sm:justify-center">
         <Button
           variant="outline"
           className="h-11 w-11 px-0"
@@ -306,7 +306,7 @@ export function DuesView({
             if (value) setPeriodMonth(Number(value));
           }}
         >
-          <SelectTrigger className="h-11 min-w-0 flex-[1.5] data-[size=default]:h-11">
+          <SelectTrigger className="h-11 min-w-0 flex-[1.5] data-[size=default]:h-11 sm:w-32 sm:flex-none">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -323,7 +323,7 @@ export function DuesView({
             if (value) setPeriodYear(Number(value));
           }}
         >
-          <SelectTrigger className="h-11 min-w-0 flex-1 data-[size=default]:h-11">
+          <SelectTrigger className="h-11 min-w-0 flex-1 data-[size=default]:h-11 sm:w-24 sm:flex-none">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
