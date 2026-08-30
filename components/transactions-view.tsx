@@ -114,16 +114,21 @@ export function TransactionsView({
   // kambuh yang ter-reproduksi hanya dengan throttling + aksi Simpan; Batal aman).
   // 700ms > exit+hold terpanjang yang teramati (~540ms); kalau ada dialog yang
   // sedang terbuka saat timer tiba, refresh ditunda lagi.
-  const scheduleRefresh = useCallback(() => {
+  const scheduleRefresh = useCallback((options?: { silent?: boolean }) => {
     const run = () => {
       if (formOpenRef.current || deletingRef.current) {
         setTimeout(run, 700);
         return;
       }
-      // Refresh dibungkus startTransition agar isPending menyala → daftar
-      // berubah jadi skeleton "Memuat..." selama data baru diambil (kalau
-      // dipanggil langsung, refresh diam-diam dan daftar tampak "tak berubah"
-      // padahal sedang di-refresh di belakang layar).
+      if (options?.silent) {
+        // Hapus/undo-delete: baris sudah berubah optimistis + ada toast, jadi
+        // refresh diam-diam saja (skeleton di sini malah terasa janggal).
+        router.refresh();
+        return;
+      }
+      // Tambah/edit: tak ada perubahan visual di list sebelum data baru tiba,
+      // jadi refresh dibungkus startTransition agar isPending menyala → daftar
+      // berubah jadi skeleton "Memuat..." selama data baru diambil.
       startTransition(() => {
         router.refresh();
       });
@@ -206,7 +211,7 @@ export function TransactionsView({
       next.delete(tx.id);
       return next;
     });
-    scheduleRefresh();
+    scheduleRefresh({ silent: true });
     toast({
       title: "Transaksi dipulihkan",
       description: `${tx.type === "income" ? "Pemasukan" : "Pengeluaran"} ${formatRupiah(tx.amount)} tanggal ${formatDateID(tx.transaction_date)} kembali dicatat.`,
@@ -240,7 +245,7 @@ export function TransactionsView({
     // File bukti ikut dihapus dari Storage (auto-delete). Best-effort:
     // gagal hapus file tidak menggagalkan alur karena transaksi sudah terhapus.
     void deleteReceipt(supabase, removed.receipt_url);
-    scheduleRefresh();
+    scheduleRefresh({ silent: true });
     toast({
       title: "Transaksi dihapus",
       description: `${removed.type === "income" ? "Pemasukan" : "Pengeluaran"} ${formatRupiah(removed.amount)} tanggal ${formatDateID(removed.transaction_date)} dihapus permanen.`,
