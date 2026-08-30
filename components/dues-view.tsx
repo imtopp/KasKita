@@ -3,6 +3,8 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import {
+  CheckCircle2,
+  CircleX,
   ChevronLeft,
   ChevronRight,
   CircleDashed,
@@ -475,7 +477,6 @@ export function DuesView({
           {visiblePayers.map((payer) => {
             const paid = paidMap.get(payer.id) ?? 0;
             const status = statusOf(payer.id);
-            const meta = STATUS_META[status];
             return (
               <li
                 key={payer.id}
@@ -516,16 +517,15 @@ export function DuesView({
                             : "Belum ada pembayaran"}
                     </p>
                   </div>
-                  <div className="flex shrink-0 items-center gap-2">
-                    <span
-                      className={cn(
-                        "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold",
-                        meta.className,
-                      )}
-                    >
-                      <span className={cn("size-1.5 rounded-full", meta.dot)} aria-hidden />
-                      {meta.label}
-                    </span>
+                  <div className="shrink-0">
+                    {status === "lunas" ? (
+                      <CheckCircle2
+                        className="size-5 text-emerald-500"
+                        aria-hidden
+                      />
+                    ) : (
+                      <CircleX className="size-5 text-destructive" aria-hidden />
+                    )}
                   </div>
                 </button>
                 {payableCategories.length > 0 && (
