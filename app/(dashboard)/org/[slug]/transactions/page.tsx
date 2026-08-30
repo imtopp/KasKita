@@ -104,17 +104,17 @@ export default async function TransactionsPage({
 
   const { data: paidPeriods } = await supabase
     .from("transactions")
-    .select("dues_payer_id, dues_period")
+    .select("dues_payer_id, dues_period, amount")
     .eq("organization_id", org.id)
     .not("dues_payer_id", "is", null)
     .not("dues_period", "is", null);
 
-  const paidPeriodsByPayer: Record<string, string[]> = {};
+  const paidPeriodsByPayer: Record<string, Record<string, number>> = {};
   for (const row of paidPeriods ?? []) {
     if (!row.dues_payer_id || !row.dues_period) continue;
     const key = row.dues_period.slice(0, 7);
-    const list = (paidPeriodsByPayer[row.dues_payer_id] ??= []);
-    if (!list.includes(key)) list.push(key);
+    const map = (paidPeriodsByPayer[row.dues_payer_id] ??= {});
+    map[key] = (map[key] ?? 0) + row.amount;
   }
 
   const totalPages = Math.max(1, Math.ceil((count ?? 0) / PAGE_SIZE));

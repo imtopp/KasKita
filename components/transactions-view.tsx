@@ -78,7 +78,7 @@ export function TransactionsView({
   categories: CategoryOption[];
   payers: PayerRow[];
   entityLabel: string;
-  paidPeriodsByPayer: Record<string, string[]>;
+  paidPeriodsByPayer: Record<string, Record<string, number>>;
   canManage: boolean;
   page: number;
   totalPages: number;
