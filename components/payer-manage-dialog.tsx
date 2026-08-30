@@ -429,8 +429,8 @@ export function PayerManageDialog({
             <p className="text-sm">
               Tautkan akun anggota ke{" "}
               <span className="font-semibold">{viewPayer?.name}</span>. Akun
-              yang ditautkan akan melihat status {"\u201c"}rumah saya{"\u201d"}{" "}
-              di halaman Iuran.
+              yang ditautkan akan melihat status {labelLower} miliknya dengan
+              badge {"\u201c"}Kamu{"\u201d"} di halaman Iuran.
             </p>
             {members === null ? (
               <ul className="space-y-2">
