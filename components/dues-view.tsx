@@ -413,19 +413,33 @@ export function DuesView({
         </div>
       </Card>
 
-      {myPayerId && (
-        <Link
-          href={`#payer-${myPayerId}`}
-          className="block rounded-xl border border-primary/30 bg-primary/5 px-4 py-3 text-sm"
-        >
-          {entityLabel} kamu:{" "}
-          <span className="font-semibold">
-            {payersState.find((payer) => payer.id === myPayerId)?.name ??
-              "—"}
-          </span>{" "}
-          → lihat status di bawah.
-        </Link>
-      )}
+      {myPayerId &&
+          (() => {
+            const myPayer = payersState.find(
+              (payer) => payer.id === myPayerId,
+            );
+            if (!myPayer) return null;
+            if (!myPayer.active) {
+              return (
+                <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-700">
+                  {entityLabel} kamu,{" "}
+                  <span className="font-semibold">{myPayer.name}</span>,
+                  sedang dinonaktifkan. Hubungi owner/bendahara untuk
+                  mengaktifkannya.
+                </div>
+              );
+            }
+            return (
+              <Link
+                href={`#payer-${myPayerId}`}
+                className="block rounded-xl border border-primary/30 bg-primary/5 px-4 py-3 text-sm"
+              >
+                {entityLabel} kamu:{" "}
+                <span className="font-semibold">{myPayer.name}</span> → lihat
+                status di bawah.
+              </Link>
+            );
+          })()}
 
       {activePayers.length === 0 ? (
         <EmptyState

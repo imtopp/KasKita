@@ -411,12 +411,12 @@ export function PayerManageDialog({
                       <Button
                         type="button"
                         variant="outline"
-                        className="h-10 w-10 px-0 text-destructive"
-                        aria-label={`Hapus ${payer.name}`}
+                        className="h-10 px-3 text-sm text-destructive"
                         disabled={busy}
                         onClick={() => requestDelete(payer)}
                       >
                         <Trash2 className="size-4" aria-hidden />
+                        Hapus
                       </Button>
                     </div>
                   </li>
