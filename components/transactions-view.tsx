@@ -120,10 +120,16 @@ export function TransactionsView({
         setTimeout(run, 700);
         return;
       }
-      router.refresh();
+      // Refresh dibungkus startTransition agar isPending menyala → daftar
+      // berubah jadi skeleton "Memuat..." selama data baru diambil (kalau
+      // dipanggil langsung, refresh diam-diam dan daftar tampak "tak berubah"
+      // padahal sedang di-refresh di belakang layar).
+      startTransition(() => {
+        router.refresh();
+      });
     };
     setTimeout(run, 700);
-  }, [router]);
+  }, [router, startTransition]);
 
   const hasActiveFilters = !!(filters.type || filters.category || filters.from || filters.to);
   const duesHref = `/org/${pathname.split("/")[2]}/dues`;
