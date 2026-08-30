@@ -73,6 +73,37 @@ function splitDues(total: number, perMonth: number): {
   return { full, rem: total % perMonth };
 }
 
+// Jadwal penempatan pecahan ke bulan-bulan iuran: bulan yang sudah punya
+// catatan (paidKeys, kunci "YYYY-MM") dilewati agar tidak dobel-catat, uang
+// jatuh ke bulan kosong terdekat. Ambil contoh: period=Juli sudah dibayar 50rb,
+// bayar 70rb "untuk Juli" = Juli 50rb + sisa 20rb → Agustus (lunas) dilewati,
+// sisa ditaruh ke September. Mengembalikan null bila tak cukup bulan kosong
+// dalam jangka wajar (guard anti loop tak berujung).
+function duesSchedule(
+  period: string,
+  full: number,
+  rem: number,
+  perMonth: number,
+  paidKeys: ReadonlySet<string>,
+): Array<{ period: string; amount: number }> | null {
+  const out: Array<{ period: string; amount: number }> = [];
+  const need = full + (rem > 0 ? 1 : 0);
+  let current = period;
+  let placed = 0;
+  let skipped = 0;
+  while (placed < need) {
+    if (skipped > 120) return null;
+    if (!paidKeys.has(current.slice(0, 7))) {
+      out.push({ period: current, amount: placed < full ? perMonth : rem });
+      placed += 1;
+    } else {
+      skipped += 1;
+    }
+    current = addMonths(current, 1);
+  }
+  return out;
+}
+
 export function TransactionFormDialog({
   open,
   onOpenChange,
@@ -421,25 +452,26 @@ export function TransactionFormDialog({
         return;
       }
     } else if (plan && period && duesPayerIdValue) {
-      const records: Array<Record<string, unknown>> = [];
-      for (let i = 0; i < plan.full; i += 1) {
-        records.push({
-          organization_id: orgId,
-          ...baseRecord(),
-          dues_period: addMonths(period, i),
-          amount: duesDefault,
-          created_by: user.id,
-        });
+      const schedule = duesSchedule(
+        period,
+        plan.full,
+        plan.rem,
+        duesDefault!,
+        paidKeys,
+      );
+      if (!schedule) {
+        setServerError(
+          "Terlalu banyak bulan yang sudah tercatat sehingga sisa iuran tak bisa ditempatkan dalam jangka wajar. Bayar per bagian.",
+        );
+        return;
       }
-      if (plan.rem > 0) {
-        records.push({
-          organization_id: orgId,
-          ...baseRecord(),
-          dues_period: addMonths(period, plan.full),
-          amount: plan.rem,
-          created_by: user.id,
-        });
-      }
+      const records: Array<Record<string, unknown>> = schedule.map((row) => ({
+        organization_id: orgId,
+        ...baseRecord(),
+        dues_period: row.period,
+        amount: row.amount,
+        created_by: user.id,
+      }));
       if (records.length > 0) {
         const { error } = await supabase.from("transactions").insert(records);
         if (error) {
