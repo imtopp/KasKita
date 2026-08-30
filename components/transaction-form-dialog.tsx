@@ -90,7 +90,9 @@ export function TransactionFormDialog({
 }) {
   const supabase = createClient();
   const [serverError, setServerError] = useState<string | null>(null);
-  const [months, setMonths] = useState(1);
+  const [monthsInput, setMonthsInput] = useState("1");
+  // Kosong dianggap 1; nilai tidak pernah di bawah 1 / di atas 12.
+  const months = clampInt(monthsInput, 1, 12);
 
   // State foto bukti.
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
@@ -145,7 +147,7 @@ export function TransactionFormDialog({
       setReceiptError(null);
       setReceiptFile(null);
       setRemoveReceipt(false);
-      setMonths(1);
+      setMonthsInput("1");
       setExistingPreview(null);
       setPreview(null);
       reset(
@@ -218,6 +220,20 @@ export function TransactionFormDialog({
       setValue("amount", String(duesDefault));
     }
   }, [isDues, transaction, duesDefault, getValues, setValue]);
+
+  // Saat pilih kategori iuran pada transaksi baru, prefill periode ke bulan
+  // berjalan — tahun otomatis = tahun ini, sehingga bulan bisa langsung dipilih.
+  useEffect(() => {
+    if (!isDues || transaction) return;
+    if (!getValues("dues_period")) {
+      const now = new Date();
+      setValue(
+        "dues_period",
+        `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`,
+        { shouldValidate: true },
+      );
+    }
+  }, [isDues, transaction, getValues, setValue]);
 
   async function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -624,12 +640,16 @@ export function TransactionFormDialog({
                     inputMode="numeric"
                     min={1}
                     max={12}
-                    value={String(months)}
-                    onChange={(event) =>
-                      setMonths(clampInt(event.target.value, 1, 12))
-                    }
+                    value={monthsInput}
+                    onChange={(event) => setMonthsInput(event.target.value)}
                     className="h-11"
                   />
+                  {months === 1 && (
+                    <p className="text-xs text-muted-foreground">
+                      Bisa dikosongkan (dianggap 1). Isi 2–12 untuk bayar
+                      beberapa bulan sekaligus.
+                    </p>
+                  )}
                   {months > 1 && !duesDefault && (
                     <p className="text-xs text-muted-foreground">
                       Isi nominal standar iuran di Kelola Kategori untuk
