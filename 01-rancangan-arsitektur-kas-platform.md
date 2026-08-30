@@ -42,7 +42,7 @@ Contoh pemakaian:
 - **Logo brand** KasKita (dari file logo user) untuk header, auth, dan ikon PWA/favicon
 - **Pengaturan organisasi** (owner/co-owner): ubah nama, ubah slug dengan cek ketersediaan, hapus organisasi (owner only, konfirmasi ketik nama), ringkasan anggota per role
 - **Perilaku navigasi native mobile**: header menampilkan nama aplikasi (KasKita) besar + tema ikon + org switcher berikon&label; Back menutup dialog lebih dulu (dropdown tidak); ganti tab dengan dashboard sebagai root
-- **Pelacakan iuran per warga/unit** (migration `202608300002`): tabel `dues_payers` (unit pembayar, nonaktif bukan hapus), flag `is_dues` + `dues_default_amount` di `categories`, transaksi iuran memakai `dues_payer_id` + `dues_period` (backdated) dengan 1 transaksi = 1 bulan iuran (bayar multi-bulan dipecah jadi N transaksi); halaman **Iuran** (status per bulan: Belum/Cicil/Lunas) lewat kartu Dashboard + `DesktopNav`; label entitas (default "Warga") diubah owner/co-owner di Pengaturan; link akun → unit pembayar via `organization_members.payer_id`
+- **Pelacakan iuran per warga/unit** (migration `202608300002`): tabel `dues_payers` (unit pembayar; nonaktif = soft untuk unit ber-riwayat, hapus permanen hanya untuk unit **tanpa transaksi iuran** via migration `202608300003`), flag `is_dues` + `dues_default_amount` di `categories`, transaksi iuran memakai `dues_payer_id` + `dues_period` (backdated) dengan 1 transaksi = 1 bulan iuran (bayar multi-bulan dipecah jadi N transaksi); halaman **Iuran** (status per bulan: Belum/Cicil/Lunas, dirinci per kategori, status kesimpulan per warga berupa ikon centang/silang) lewat kartu Dashboard + `DesktopNav`; label entitas (default "Warga") diubah owner/co-owner di Pengaturan; link akun → unit pembayar via `organization_members.payer_id`
 
 ---
 
@@ -313,7 +313,9 @@ create policy "manage_invitations" on invitations
   for all using (get_org_role(organization_id) in ('owner', 'co_owner'));
 
 -- DUES PAYERS: semua anggota bisa lihat, owner/co-owner/treasurer bisa kelola (via migration 202608300002).
--- TIADA policy DELETE — unit dinonaktifkan (active=false) agar riwayat iuran tetap utuh.
+-- DELETE disediakan via migration 202608300003 (owner/co-owner/treasurer) tapi praktis hanya
+-- menembus unit TANPA transaksi iuran (ber-riwayat ditolak Postgres via check transactions_dues_pair_check);
+-- unit ber-riwayat sebaiknya dinonaktifkan (active=false) agar riwayat iuran tetap utuh.
 create policy "select_dues_payers" on dues_payers
   for select using (is_org_member(organization_id));
 
@@ -322,6 +324,9 @@ create policy "insert_dues_payers" on dues_payers
 
 create policy "update_dues_payers" on dues_payers
   for update using (get_org_role(organization_id) in ('owner', 'co_owner', 'treasurer'));
+
+create policy "delete_dues_payers" on dues_payers
+  for delete using (get_org_role(organization_id) in ('owner', 'co_owner', 'treasurer'));
 ```
 
 **RLS Storage — upload bukti foto transaksi (US-3.1, via migration `202608300001_receipt_storage_policies.sql`):** bucket `receipts` private (dibuat manual di Dashboard), path objek `receipts/<organization_id>/<uuid>.jpg`. Policy di `storage.objects` memakai helper `is_org_member`/`get_org_role` dari folder pertama di path — jadi isolasi data tetap di level database:
@@ -407,12 +412,13 @@ kaskita/
 │   ├── api/                            # HANYA untuk logic ber-privilege (service_role)
 │   │   ├── invitations/route.ts        # undang via email + daftarkan anggota manual
 │   │   ├── invitations/accept/route.ts # validasi token + expires_at
-│   │   └── members/route.ts            # kelola anggota: buat/existing, ubah role, reset password, ganti email, nonaktifkan/aktifkan akun, putuskan semua sesi, hapus
-│   │   └── reports/route.ts            # GET laporan bulanan PDF (pdfmake, semua role, no-store)
+│   │   ├── members/route.ts            # kelola anggota: buat/existing, ubah role, reset password, ganti email, nonaktifkan/aktifkan akun, putuskan semua sesi, hapus
+│   │   ├── reports/route.ts            # GET laporan bulanan PDF (pdfmake, semua role, no-store)
+│   │   └── reports/dues/route.ts       # GET laporan iuran tahunan PDF (pdfmake, semua role, no-store)
 │   ├── layout.tsx                      # font Baloo 2, theme-init script, PWA manifest, theme color
 │   └── page.tsx                        # redirect: login / org pertama / onboarding
 ├── components/
-│   ├── ui/                             # shadcn/ui components
+│   ├── ui/                             # shadcn/ui (Base UI) + alert-dialog (konfirmasi tegas)
 │   ├── bottom-nav.tsx                  # navigasi bawah (mobile)
 │   ├── desktop-nav.tsx                 # navigasi atas (desktop, md+)
 │   ├── nav-link-icon.tsx               # spinner loading link nav (useLinkStatus)
@@ -423,7 +429,7 @@ kaskita/
 │   ├── date-input.tsx                  # input tanggal + hint "dd/mm/yyyy" (placeholder native tak muncul di HP)
 │   ├── transactions-view.tsx / transaction-form-dialog.tsx
 │   ├── categories-view.tsx / category-form-dialog.tsx
-│   ├── dues-view.tsx / payer-manage-dialog.tsx   # status iuran + kelola unit pembayar (tambah/rename/nonaktif/link akun)
+│   ├── dues-view.tsx / payer-manage-dialog.tsx   # status iuran + kelola unit pembayar (tambah/rename/nonaktif/link akun/hapus + konfirmasi AlertDialog)
 │   ├── org-dues-label-form.tsx                   # ubah label entitas iuran (pengaturan, owner/co-owner)
 │   ├── reports-view.tsx
 │   ├── members-view.tsx / create-member-dialog.tsx / invite-member-dialog.tsx / member-manage-dialog.tsx
@@ -558,6 +564,6 @@ Untuk skala pemakaian: beberapa organisasi kecil (RT, arisan, komunitas), total 
 
 Dokumen ini awalnya dipakai sebagai acuan build dari nol; saat ini **seluruh MVP sudah selesai dan live di production** (Vercel). Item yang belum dikerjakan dan sengaja dibiarkan (opsional): export laporan PDF/Excel, grafik tren (Recharts), upload bukti foto, custom domain, approval flow, notifikasi otomatis, multi-currency.
 
-Perubahan yang sudah disetujui user setelah MVP tercatat di section 1 (PWA, tema per-akun, DesktopNav, logo brand) dan di PRD "Fitur Tambahan" (kelola akun anggota, export PDF untuk semua role, role **co-owner** + pembatasan buat organisasi, perbaikan layout mobile, **pengaturan organisasi** — ubah nama/slug, hapus organisasi owner-only, ringkasan anggota; serta polish animasi tanpa dependency, **redesain header** — nama aplikasi KasKita tampil, tema jadi ikon, org switcher berikon+label dengan spinner saat ganti — dan **perilaku navigasi native mobile** — back menutup dialog/dropdown dulu, ganti tab dengan dashboard sebagai root). Skema & RLS yang benar-benar berjalan ada di `03-database-migration.sql` — file itu sudah dijalankan dan **tidak boleh diedit**; perubahan skema berikutnya memakai migration file baru (contoh: `supabase/migrations/202608090001_co_owner_role_and_org_creation.sql` untuk role `co_owner` + pembatasan `insert_org`).
+Perubahan yang sudah disetujui user setelah MVP tercatat di section 1 (PWA, tema per-akun, DesktopNav, logo brand) dan di PRD "Fitur Tambahan" (kelola akun anggota, export PDF untuk semua role, role **co-owner** + pembatasan buat organisasi, perbaikan layout mobile, **pengaturan organisasi** — ubah nama/slug, hapus organisasi owner-only, ringkasan anggota; serta polish animasi tanpa dependency, **redesain header** — nama aplikasi KasKita tampil, tema jadi ikon, org switcher berikon+label dengan spinner saat ganti — dan **perilaku navigasi native mobile** — back menutup dialog/dropdown dulu, ganti tab dengan dashboard sebagai root). Skema & RLS yang benar-benar berjalan ada di `03-database-migration.sql` — file itu sudah dijalankan dan **tidak boleh diedit**; perubahan skema berikutnya memakai migration file baru (contoh: `supabase/migrations/202608090001_co_owner_role_and_org_creation.sql` untuk role `co_owner` + pembatasan `insert_org`; setelahnya `202608080001` RPC `is_slug_available`, `202608300001` policy storage bukti foto, `202608300002` iuran `dues_payers` + link akun, `202608300003` policy DELETE `dues_payers`).
 
 > Estimasi pengerjaan awal: ~2-3 minggu kerja santai / ~1 minggu fokus penuh.
