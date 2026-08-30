@@ -1,7 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { KeyRound, Loader2, Pencil, Plus, Power } from "lucide-react";
+import { KeyRound, Loader2, Pencil, Plus, Power, Trash2 } from "lucide-react";
+
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -39,6 +41,7 @@ export function PayerManageDialog({
   entityLabel,
   payers,
   canLink,
+  payerTxCount,
   onChange,
 }: {
   open: boolean;
@@ -47,6 +50,7 @@ export function PayerManageDialog({
   entityLabel: string;
   payers: PayerRow[];
   canLink: boolean;
+  payerTxCount: Record<string, number>;
   onChange: (payers: PayerRow[]) => void;
 }) {
   const supabase = createClient();
@@ -59,6 +63,7 @@ export function PayerManageDialog({
     new Map(),
   );
   const [members, setMembers] = useState<MemberOption[] | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<PayerRow | null>(null);
 
   const modeRef = useRef<Mode>(mode);
   useEffect(() => {
@@ -213,6 +218,41 @@ export function PayerManageDialog({
     );
   }
 
+  function requestDelete(payer: PayerRow) {
+    const txCount = payerTxCount[payer.id] ?? 0;
+    if (txCount > 0) {
+      setServerError(
+        `${payer.name} sudah punya ${txCount} transaksi iuran. Nonaktifkan saja agar riwayat tetap tersimpan.`,
+      );
+      return;
+    }
+    setServerError(null);
+    setConfirmDelete(payer);
+  }
+
+  async function deletePayer(target: PayerRow | null) {
+    if (!target || busy) return;
+    setBusy(true);
+    setServerError(null);
+    const { error } = await supabase
+      .from("dues_payers")
+      .delete()
+      .eq("id", target.id);
+    setBusy(false);
+    setConfirmDelete(null);
+    if (error) {
+      setServerError(
+        /row-level security|permission denied/i.test(error.message)
+          ? "Kamu tidak punya izin untuk menghapus " +
+              entityLabel.toLowerCase() +
+              "."
+          : "Gagal menghapus. Coba lagi.",
+      );
+      return;
+    }
+    onChange(payers.filter((item) => item.id !== target.id));
+  }
+
   async function saveLinks() {
     if (!members || busy) return;
     setBusy(true);
@@ -261,7 +301,8 @@ export function PayerManageDialog({
   const payerNameById = new Map(payers.map((payer) => [payer.id, payer.name]));
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Kelola {labelLower}</DialogTitle>
@@ -366,6 +407,16 @@ export function PayerManageDialog({
                       >
                         <Power className="size-4" aria-hidden />
                         {payer.active ? "Nonaktifkan" : "Aktifkan"}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="h-10 w-10 px-0 text-destructive"
+                        aria-label={`Hapus ${payer.name}`}
+                        disabled={busy}
+                        onClick={() => requestDelete(payer)}
+                      >
+                        <Trash2 className="size-4" aria-hidden />
                       </Button>
                     </div>
                   </li>
@@ -521,5 +572,55 @@ export function PayerManageDialog({
         )}
       </DialogContent>
     </Dialog>
+
+    <AlertDialog
+      open={confirmDelete !== null}
+      onOpenChange={(open) => {
+        if (!open) setConfirmDelete(null);
+      }}
+    >
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>
+            Hapus {labelLower} {confirmDelete?.name}?
+          </AlertDialogTitle>
+          <AlertDialogDescription>
+            {labelLower.charAt(0).toUpperCase() + labelLower.slice(1)} ini
+            belum punya transaksi iuran, jadi aman dihapus permanen. Jika ada
+            akun anggota yang tertaut, tautannya ikut dilepas. Tindakan ini
+            tidak bisa dibatalkan.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel
+            render={
+              <Button
+                type="button"
+                variant="outline"
+                className="h-11"
+                disabled={busy}
+              />
+            }
+          >
+            Batal
+          </AlertDialogCancel>
+          <AlertDialogAction
+            render={
+              <Button
+                type="button"
+                variant="destructive"
+                className="h-11 text-base"
+                disabled={busy}
+                onClick={() => void deletePayer(confirmDelete)}
+              />
+            }
+          >
+            {busy && <Loader2 className="size-4 animate-spin" aria-hidden />}
+            Hapus
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 }

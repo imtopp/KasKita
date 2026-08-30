@@ -11,6 +11,7 @@ import { formatDateID, formatRupiah, todayISO } from "@/lib/utils";
 export type DuesReportPayer = {
   id: string;
   name: string;
+  active: boolean;
 };
 
 export type DuesReportCategory = {
@@ -72,10 +73,27 @@ export async function generateDuesReportPdf(params: {
     0,
   );
 
+  // Roster laporan: semua warga AKTIF (termasuk yang belum pernah bayar,
+  // supaya yang menunggak tetap ketahuan) + warga nonaktif yang pernah punya
+  // transaksi iuran di tahun ini. Warga nonaktif tanpa transaksi tahun ini
+  // tidak dimunculkan (sudah tidak aktif sepanjang tahun).
+  const yearTxCount = new Map<string, number>();
+  for (const tx of transactions) {
+    if (!tx.payer_id || !tx.dues_period) continue;
+    if (!tx.dues_period.startsWith(`${year}-`)) continue;
+    yearTxCount.set(tx.payer_id, (yearTxCount.get(tx.payer_id) ?? 0) + 1);
+  }
+  const roster = payers.filter(
+    (payer) => payer.active || (yearTxCount.get(payer.id) ?? 0) > 0,
+  );
+  const activeCount = roster.filter((payer) => payer.active).length;
+  const displayName = (payer: DuesReportPayer): string =>
+    payer.active ? payer.name : `${payer.name} (nonaktif)`;
+
   const paidMonth = new Map<string, number[]>();
   const paidTotal = new Map<string, number>();
   const paidByCategory = new Map<string, number>();
-  for (const payer of payers) {
+  for (const payer of roster) {
     paidMonth.set(payer.id, Array(12).fill(0));
     paidTotal.set(payer.id, 0);
   }
@@ -104,7 +122,7 @@ export async function generateDuesReportPdf(params: {
   const OTHER_BUCKET = "__other__";
 
   const paidMonthPerCat = new Map<string, Map<string, number[]>>();
-  for (const payer of payers) {
+  for (const payer of roster) {
     const catMap = new Map<string, number[]>();
     for (const category of categoriesWithTarget) {
       catMap.set(category.id, Array(12).fill(0));
@@ -131,7 +149,7 @@ export async function generateDuesReportPdf(params: {
 
   let collectedYear = 0;
   let lunasYear = 0;
-  for (const payer of payers) {
+  for (const payer of roster) {
     collectedYear += paidTotal.get(payer.id) ?? 0;
     const catMap = paidMonthPerCat.get(payer.id) ?? new Map();
     let lunasAll: boolean;
@@ -165,17 +183,17 @@ export async function generateDuesReportPdf(params: {
     if (lunasAll) lunasYear += 1;
   }
 
-  const targetYear = monthlyTarget * 12 * payers.length;
+  const targetYear = monthlyTarget * 12 * activeCount;
   const remainingYear = Math.max(0, targetYear - collectedYear);
 
   const COLUMN_COUNT = 14; // nama + 12 bulan + total
   const matrixRows: TableCell[][] = [];
-  for (const payer of payers) {
+  for (const payer of roster) {
     const catMap: Map<string, number[]> =
       paidMonthPerCat.get(payer.id) ?? new Map();
     matrixRows.push([
       {
-        text: payer.name,
+        text: displayName(payer),
         bold: true,
         fillColor: "#f3f4f6",
         margin: [0, 3, 0, 3],
@@ -260,7 +278,7 @@ export async function generateDuesReportPdf(params: {
       { text: "Sisa", style: "tableHeader", alignment: "right" },
     ],
     ...categoriesWithTarget.map((category) => {
-      const perMonth = (category.dues_default_amount ?? 0) * payers.length;
+      const perMonth = (category.dues_default_amount ?? 0) * activeCount;
       const perYear = perMonth * 12;
       const collected = paidByCategory.get(category.id) ?? 0;
       return [
@@ -282,7 +300,7 @@ export async function generateDuesReportPdf(params: {
   ];
 
   const outstanding: Array<{ name: string; lines: string[] }> = [];
-  for (const payer of payers) {
+  for (const payer of roster) {
     const catMap = paidMonthPerCat.get(payer.id) ?? new Map();
     const lines: string[] = [];
     for (const category of categoriesWithTarget) {
@@ -303,12 +321,12 @@ export async function generateDuesReportPdf(params: {
       }
     }
     if (lines.length > 0) {
-      outstanding.push({ name: payer.name, lines });
+      outstanding.push({ name: displayName(payer), lines });
     }
   }
 
   const summaryBody: TableCell[][] = [
-    [`Jumlah ${entityLabel.toLowerCase()} aktif`, { text: String(payers.length), alignment: "right" }],
+    [`Jumlah ${entityLabel.toLowerCase()} aktif`, { text: String(activeCount), alignment: "right" }],
     [
       isCurrentYear
         ? `${entityLabel} lunas s.d. bulan berjalan`
@@ -387,7 +405,7 @@ export async function generateDuesReportPdf(params: {
       },
       {
         text: monthlyTarget > 0
-          ? `Satu baris = satu kategori iuran per warga. Angka hijau = kategori itu lunas di bulan tersebut; oranye ber-* = baru cicil; — = belum ada pembayaran. Target tiap kategori per bulan ada di tabel Rekap di atas.`
+          ? `Satu baris = satu kategori iuran per warga. Angka hijau = kategori itu lunas di bulan tersebut; oranye ber-* = baru cicil; — = belum ada pembayaran. Target tiap kategori per bulan ada di tabel Rekap di atas. Nama berlabel (nonaktif) = sudah dinonaktifkan, riwayat tetap disertakan.`
           : "Angka = nominal iuran yang masuk; — = belum ada pembayaran.",
         style: "muted",
         margin: [0, 6, 0, 0],

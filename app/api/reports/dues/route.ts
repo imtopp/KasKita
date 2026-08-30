@@ -4,7 +4,6 @@ import { getRequester, jsonError } from "@/lib/api-helpers";
 import {
   generateDuesReportPdf,
   type DuesReportCategory,
-  type DuesReportPayer,
   type DuesReportTx,
 } from "@/lib/pdf/dues-report";
 import { createClient } from "@/lib/supabase/server";
@@ -43,9 +42,8 @@ export async function GET(request: NextRequest) {
     await Promise.all([
       supabase
         .from("dues_payers")
-        .select("id, name")
+        .select("id, name, active")
         .eq("organization_id", orgId)
-        .eq("active", true)
         .order("name"),
       supabase
         .from("categories")
@@ -69,7 +67,11 @@ export async function GET(request: NextRequest) {
     orgName: org.name,
     entityLabel: org.dues_entity_label,
     year,
-    payers: (payers ?? []) as DuesReportPayer[],
+    payers: (payers ?? []).map((payer) => ({
+      id: payer.id,
+      name: payer.name,
+      active: payer.active,
+    })),
     duesCategories: (categories ?? []) as DuesReportCategory[],
     transactions: (txs ?? []) as DuesReportTx[],
   });

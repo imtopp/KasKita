@@ -158,6 +158,14 @@ export function DuesView({
     return { paidMap, paidByCategory, txByPayer };
   }, [duesTransactions, periodMonth, periodYear]);
 
+  // Jumlah transaksi iuran per warga (semua periode) — dipakai dialog "Kelola
+  // warga": warga dengan riwayat transaksi TIDAK boleh dihapus (nonaktifkan saja).
+  const payerTxCount = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const [payerId, list] of txByPayer) counts[payerId] = list.length;
+    return counts;
+  }, [txByPayer]);
+
   function paidFor(payerId: string, categoryId: string): number {
     return paidByCategory.get(payerId)?.get(categoryId) ?? 0;
   }
@@ -565,6 +573,7 @@ export function DuesView({
         entityLabel={entityLabel}
         payers={payersState}
         canLink={canLink}
+        payerTxCount={payerTxCount}
         onChange={setPayersState}
       />
 
