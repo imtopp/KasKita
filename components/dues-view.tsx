@@ -3,7 +3,6 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import {
-  CheckCircle2,
   ChevronLeft,
   ChevronRight,
   CircleDashed,
@@ -518,9 +517,6 @@ export function DuesView({
                     </p>
                   </div>
                   <div className="flex shrink-0 items-center gap-2">
-                    {status === "lunas" && (
-                      <CheckCircle2 className="size-5 text-emerald-500" aria-hidden />
-                    )}
                     <span
                       className={cn(
                         "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold",
