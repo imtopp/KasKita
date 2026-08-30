@@ -199,7 +199,9 @@ export function TransactionFormDialog({
               transaction_date: transaction.transaction_date,
               description: transaction.description ?? "",
               dues_payer_id: transaction.dues_payer_id ?? "",
-              dues_period: transaction.dues_period ?? "",
+              dues_period: transaction.dues_period
+                ? transaction.dues_period.slice(0, 7)
+                : "",
             }
           : {
               type: "expense",
@@ -381,18 +383,21 @@ export function TransactionFormDialog({
     let period: string | null = null;
     const amount = Number(data.amount);
     if (isDues) {
+      duesPayerIdValue = data.dues_payer_id!;
+      // DB menyimpan `dues_period` sebagai date ("YYYY-MM-DD"); form memakai
+      // "YYYY-MM". Normalisasi agar validasi & logika periode selalu konsisten.
+      const periodRaw = data.dues_period ?? "";
+      period =
+        periodRaw.length === 10 ? periodRaw.slice(0, 7) : periodRaw;
       const duesCheck = duesFieldsSchema.safeParse({
-        dues_payer_id: data.dues_payer_id ?? "",
-        dues_period: data.dues_period ?? "",
+        dues_payer_id: duesPayerIdValue ?? "",
+        dues_period: period,
       });
       if (!duesCheck.success) {
         setServerError(duesCheck.error.issues[0].message);
         return;
       }
-      duesPayerIdValue = data.dues_payer_id!;
-      period = data.dues_period!;
-      // DB menyimpan `dues_period` sebagai date (harus "YYYY-MM-DD", hari-1
-      // bulan). Form memakai "YYYY-MM"; saat edit nilainya sudah "YYYY-MM-DD".
+      // Simpan kembali sebagai date hari-1 bulan ("YYYY-MM-DD").
       if (period.length === 7) {
         period = `${period}-01`;
       }
