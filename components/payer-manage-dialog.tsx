@@ -56,6 +56,9 @@ export function PayerManageDialog({
   const [serverError, setServerError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [linkMap, setLinkMap] = useState<Map<string, boolean>>(new Map());
+  const [currentPayer, setCurrentPayer] = useState<Map<string, string | null>>(
+    new Map(),
+  );
   const [members, setMembers] = useState<MemberOption[] | null>(null);
 
   const modeRef = useRef<Mode>(mode);
@@ -100,10 +103,13 @@ export function PayerManageDialog({
         .select("user_id, payer_id")
         .eq("organization_id", orgId);
       const next = new Map<string, boolean>();
+      const current = new Map<string, string | null>();
       for (const row of memberships ?? []) {
         next.set(row.user_id, row.payer_id === payer.id);
+        current.set(row.user_id, row.payer_id);
       }
       setLinkMap(next);
+      setCurrentPayer(current);
     },
     [orgId, members, supabase],
   );
@@ -214,20 +220,36 @@ export function PayerManageDialog({
     setServerError(null);
     const payerId = mode.view === "accounts" ? mode.payer.id : null;
     if (!payerId) return;
-    const updates = members.map(async (member) => {
+    const changed: Array<{ user_id: string; payer_id: string | null }> = [];
+    for (const member of members) {
+      const current = currentPayer.get(member.user_id) ?? null;
       const linked = linkMap.get(member.user_id) ?? false;
-      const nextValue = linked ? payerId : null;
+      let nextValue: string | null;
+      if (linked) {
+        if (current === payerId) continue;
+        nextValue = payerId;
+      } else {
+        if (current !== payerId) continue;
+        nextValue = null;
+      }
+      changed.push({ user_id: member.user_id, payer_id: nextValue });
+    }
+    if (changed.length === 0) {
+      setBusy(false);
+      setMode({ view: "list" });
+      return;
+    }
+    const errors: unknown[] = [];
+    for (const row of changed) {
       const { error } = await supabase
         .from("organization_members")
-        .update({ payer_id: nextValue })
+        .update({ payer_id: row.payer_id })
         .eq("organization_id", orgId)
-        .eq("user_id", member.user_id);
-      return error;
-    });
-    const errors = await Promise.all(updates);
-    const firstError = errors.find(Boolean);
+        .eq("user_id", row.user_id);
+      if (error) errors.push(error);
+    }
     setBusy(false);
-    if (firstError) {
+    if (errors.length > 0) {
       setServerError("Gagal menyimpan tautan akun. Coba lagi.");
       return;
     }
@@ -237,6 +259,7 @@ export function PayerManageDialog({
   const view = mode.view;
   const viewPayer = view === "rename" || view === "accounts" ? mode.payer : null;
   const labelLower = entityLabel.toLowerCase();
+  const payerNameById = new Map(payers.map((payer) => [payer.id, payer.name]));
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -426,6 +449,13 @@ export function PayerManageDialog({
               <ul className="space-y-2">
                 {members.map((member) => {
                   const linked = linkMap.get(member.user_id) ?? false;
+                  const memberPayerId = currentPayer.get(member.user_id) ?? null;
+                  const memberPayerName = memberPayerId
+                    ? payerNameById.get(memberPayerId)
+                    : null;
+                  const linkedElsewhere =
+                    memberPayerId !== null &&
+                    memberPayerId !== viewPayer?.id;
                   return (
                     <li
                       key={member.user_id}
@@ -436,8 +466,23 @@ export function PayerManageDialog({
                           type="checkbox"
                           checked={linked}
                           onChange={(event) => {
+                            const checked = event.target.checked;
+                            if (
+                              checked &&
+                              linkedElsewhere &&
+                              viewPayer &&
+                              memberPayerName
+                            ) {
+                              const confirmed = window.confirm(
+                                `${member.name ?? member.email} sudah tertaut ke ${memberPayerName}. Pindahkan ke ${viewPayer.name}?`,
+                              );
+                              if (!confirmed) {
+                                event.target.checked = false;
+                                return;
+                              }
+                            }
                             const next = new Map(linkMap);
-                            next.set(member.user_id, event.target.checked);
+                            next.set(member.user_id, checked);
                             setLinkMap(next);
                           }}
                           className="size-4"
@@ -449,6 +494,11 @@ export function PayerManageDialog({
                           <span className="block truncate text-xs text-muted-foreground">
                             {member.email}
                           </span>
+                          {linkedElsewhere && (
+                            <span className="mt-0.5 block text-xs font-medium text-amber-600">
+                              Sudah tertaut ke {memberPayerName ?? "warga lain"}
+                            </span>
+                          )}
                         </span>
                       </label>
                     </li>
