@@ -113,6 +113,104 @@ export async function generateDuesReportPdf(params: {
   const targetYear = monthlyTarget * 12 * payers.length;
   const remainingYear = Math.max(0, targetYear - collectedYear);
 
+  const OTHER_BUCKET = "__other__";
+  const catTargets = new Map<string, number>();
+  for (const category of categoriesWithTarget) {
+    catTargets.set(category.id, category.dues_default_amount ?? 0);
+  }
+
+  const paidMonthPerCat = new Map<string, Map<string, number[]>>();
+  for (const payer of payers) {
+    const catMap = new Map<string, number[]>();
+    for (const category of categoriesWithTarget) {
+      catMap.set(category.id, Array(12).fill(0));
+    }
+    paidMonthPerCat.set(payer.id, catMap);
+  }
+
+  for (const tx of transactions) {
+    if (!tx.payer_id || !tx.dues_period) continue;
+    const parts = tx.dues_period.split("-").map(Number);
+    if (parts.length < 2 || parts[0] !== year) continue;
+    const monthIndex = parts[1] - 1;
+    const catMap = paidMonthPerCat.get(tx.payer_id);
+    if (!catMap) continue;
+    const bucket =
+      tx.category_id && catMap.has(tx.category_id) ? tx.category_id : OTHER_BUCKET;
+    let bucketArr = catMap.get(bucket);
+    if (!bucketArr) {
+      bucketArr = Array(12).fill(0);
+      catMap.set(bucket, bucketArr);
+    }
+    bucketArr[monthIndex] += Number(tx.amount);
+  }
+
+  const COLUMN_COUNT = 14; // nama + 12 bulan + total
+  const matrixRows: TableCell[][] = [];
+  for (const payer of payers) {
+    const catMap: Map<string, number[]> =
+      paidMonthPerCat.get(payer.id) ?? new Map();
+    matrixRows.push([
+      {
+        text: payer.name,
+        bold: true,
+        fillColor: "#f3f4f6",
+        margin: [0, 3, 0, 3],
+        colSpan: COLUMN_COUNT,
+      },
+      ...Array(COLUMN_COUNT - 1).fill({} as TableCell),
+    ]);
+    const rows: Array<[string, number[], number]> = [];
+    for (const category of categoriesWithTarget) {
+      const arr = catMap.get(category.id) ?? Array(12).fill(0);
+      rows.push([category.name, arr, category.dues_default_amount ?? 0]);
+    }
+    const otherArr = catMap.get(OTHER_BUCKET);
+    if (otherArr && otherArr.some((value: number) => value > 0)) {
+      rows.push(["Iuran lain (tanpa target)", otherArr, 0]);
+    }
+    for (const [label, monthArr, target] of rows) {
+      const rowTotal = monthArr.reduce((sum, value) => sum + value, 0);
+      matrixRows.push([
+        { text: label, margin: [10, 0, 0, 0] },
+        ...Array.from({ length: 12 }, (_, index) => {
+          const amount = monthArr[index] ?? 0;
+          if (amount <= 0) {
+            return {
+              text: "—",
+              alignment: "right" as const,
+              color: MUTED_COLOR,
+            };
+          }
+          if (target > 0 && amount >= target) {
+            return {
+              text: compactAmount(amount),
+              alignment: "right" as const,
+              color: FULL_COLOR,
+              bold: true,
+            };
+          }
+          if (target > 0) {
+            return {
+              text: `${compactAmount(amount)}*`,
+              alignment: "right" as const,
+              color: PARTIAL_COLOR,
+            };
+          }
+          return {
+            text: compactAmount(amount),
+            alignment: "right" as const,
+          };
+        }),
+        {
+          text: compactAmount(rowTotal),
+          alignment: "right" as const,
+          bold: true,
+        },
+      ]);
+    }
+  }
+
   const matrixBody: TableCell[][] = [
     [
       { text: entityLabel, style: "tableHeader" },
@@ -127,46 +225,7 @@ export async function generateDuesReportPdf(params: {
         alignment: "right",
       },
     ],
-    ...payers.map((payer) => {
-      const monthArr = paidMonth.get(payer.id) ?? [];
-      return [
-        { text: payer.name },
-        ...Array.from({ length: 12 }, (_, index) => {
-          const amount = monthArr[index] ?? 0;
-          if (amount <= 0) {
-            return {
-              text: "—",
-              alignment: "right" as const,
-              color: MUTED_COLOR,
-            };
-          }
-          if (monthlyTarget > 0 && amount >= monthlyTarget) {
-            return {
-              text: compactAmount(amount),
-              alignment: "right" as const,
-              color: FULL_COLOR,
-              bold: true,
-            };
-          }
-          if (monthlyTarget > 0) {
-            return {
-              text: `${compactAmount(amount)}*`,
-              alignment: "right" as const,
-              color: PARTIAL_COLOR,
-            };
-          }
-          return {
-            text: compactAmount(amount),
-            alignment: "right" as const,
-          };
-        }),
-        {
-          text: compactAmount(paidTotal.get(payer.id) ?? 0),
-          alignment: "right" as const,
-          bold: true,
-        },
-      ];
-    }),
+    ...matrixRows,
   ];
 
   const categoryBody: TableCell[][] = [
@@ -285,11 +344,11 @@ export async function generateDuesReportPdf(params: {
           ]
         : []),
 
-      { text: "Pembayaran per Bulan", style: "section" },
+      { text: "Matriks Pembayaran per Bulan (per Kategori)", style: "section" },
       {
         table: {
           headerRows: 1,
-          widths: [90, ...Array(12).fill("*"), "auto"],
+          widths: [110, ...Array(12).fill("*"), "auto"],
           body: matrixBody,
         },
         fontSize: 8,
@@ -297,7 +356,7 @@ export async function generateDuesReportPdf(params: {
       },
       {
         text: monthlyTarget > 0
-          ? `Angka hijau = lunas bulan itu; angka oranye ber-* = baru cicil (target ${formatRupiah(monthlyTarget)}/bulan); — = belum ada pembayaran.`
+          ? `Satu baris = satu kategori iuran per warga. Angka hijau = kategori itu lunas di bulan tersebut; oranye ber-* = baru cicil; — = belum ada pembayaran. Target tiap kategori per bulan ada di tabel Rekap di atas.`
           : "Angka = nominal iuran yang masuk; — = belum ada pembayaran.",
         style: "muted",
         margin: [0, 6, 0, 0],
