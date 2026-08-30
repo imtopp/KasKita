@@ -43,7 +43,7 @@ jobs:
           # Source of truth: semua tabel di public schema (03-database-migration.sql).
           # anon tidak bisa auto-discover tabel (root /rest/v1 di-block), jadi
           # daftar ini kontrak — ingat tambahkan di sini kalau ada tabel baru.
-          TABLES=(organizations organization_members categories transactions invitations)
+          TABLES=(organizations organization_members categories transactions invitations dues_payers)
 
           FAIL=0
 

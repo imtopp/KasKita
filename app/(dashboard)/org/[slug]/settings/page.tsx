@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation";
 
 import { Forbidden } from "@/components/forbidden";
 import { OrgDeleteButton } from "@/components/org-delete-button";
+import { OrgDuesLabelForm } from "@/components/org-dues-label-form";
 import { OrgNameForm } from "@/components/org-name-form";
 import { OrgSlugForm } from "@/components/org-slug-form";
 import {
@@ -38,7 +39,7 @@ export default async function SettingsPage({
 
   const { data: org } = await supabase
     .from("organizations")
-    .select("id, name, slug, created_at")
+    .select("id, name, slug, created_at, dues_entity_label")
     .eq("slug", slug)
     .single();
   if (!org) {
@@ -140,6 +141,18 @@ export default async function SettingsPage({
         </CardHeader>
         <CardContent>
           <OrgSlugForm orgId={org.id} currentSlug={org.slug} />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Ubah label unit iuran</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <OrgDuesLabelForm
+            orgId={org.id}
+            currentLabel={org.dues_entity_label ?? "Warga"}
+          />
         </CardContent>
       </Card>
 

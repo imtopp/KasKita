@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import {
   ArrowLeftRight,
   BarChart3,
+  ClipboardList,
   LayoutDashboard,
   Settings,
   Tags,
@@ -18,6 +19,7 @@ import { NavLinkIcon } from "@/components/nav-link-icon";
 const items = [
   { href: "dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "transactions", label: "Transaksi", icon: ArrowLeftRight },
+  { href: "dues", label: "Iuran", icon: ClipboardList },
   { href: "categories", label: "Kategori", icon: Tags },
   { href: "reports", label: "Laporan", icon: BarChart3 },
   { href: "members", label: "Anggota", icon: Users },

@@ -42,6 +42,7 @@ Contoh pemakaian:
 - **Logo brand** KasKita (dari file logo user) untuk header, auth, dan ikon PWA/favicon
 - **Pengaturan organisasi** (owner/co-owner): ubah nama, ubah slug dengan cek ketersediaan, hapus organisasi (owner only, konfirmasi ketik nama), ringkasan anggota per role
 - **Perilaku navigasi native mobile**: header menampilkan nama aplikasi (KasKita) besar + tema ikon + org switcher berikon&label; Back menutup dialog lebih dulu (dropdown tidak); ganti tab dengan dashboard sebagai root
+- **Pelacakan iuran per warga/unit** (migration `202608300002`): tabel `dues_payers` (unit pembayar, nonaktif bukan hapus), flag `is_dues` + `dues_default_amount` di `categories`, transaksi iuran memakai `dues_payer_id` + `dues_period` (backdated) dengan 1 transaksi = 1 bulan iuran (bayar multi-bulan dipecah jadi N transaksi); halaman **Iuran** (status per bulan: Belum/Cicil/Lunas) lewat kartu Dashboard + `DesktopNav`; label entitas (default "Warga") diubah owner/co-owner di Pengaturan; link akun → unit pembayar via `organization_members.payer_id`
 
 ---
 
@@ -97,6 +98,7 @@ create table organizations (
   slug text unique not null,             -- "rt-05-sukamaju" (untuk URL)
   description text,
   currency text default 'IDR',
+  dues_entity_label text not null default 'Warga',  -- label entitas pembayar iuran (via migration 202608300002)
   created_by uuid references auth.users(id) not null,
   created_at timestamptz default now(),
   updated_at timestamptz default now()
@@ -112,6 +114,7 @@ create table organization_members (
   role text not null check (role in ('owner', 'treasurer', 'viewer')),  -- + 'co_owner' via migration 202608090001
   invited_by uuid references auth.users(id),
   joined_at timestamptz default now(),
+  payer_id uuid,                            -- link akun → unit pembayar iuran (via migration 202608300002)
   unique (organization_id, user_id)
 );
 
@@ -123,6 +126,8 @@ create table categories (
   organization_id uuid references organizations(id) on delete cascade not null,
   name text not null,                    -- "Iuran Warga", "Kebersihan", "Keamanan"
   type text not null check (type in ('income', 'expense')),
+  is_dues boolean not null default false,   -- kategori iuran per warga (via migration 202608300002)
+  dues_default_amount numeric(14,2),        -- nominal standar iuran (nullable, check > 0)
   created_at timestamptz default now()
 );
 
@@ -138,6 +143,8 @@ create table transactions (
   description text,
   transaction_date date not null default current_date,
   receipt_url text,                      -- link ke foto bukti di Supabase Storage
+  dues_payer_id uuid,                    -- unit pembayar iuran (via migration 202608300002), pair dengan dues_period
+  dues_period date check (date_part('day', dues_period) = 1), -- periode iuran (tanggal-1 bulan), backdated
   created_by uuid references auth.users(id) not null,
   created_at timestamptz default now(),
   updated_at timestamptz default now()
@@ -164,6 +171,27 @@ create index idx_members_user on organization_members(user_id);
 create index idx_members_org on organization_members(organization_id);
 ```
 
+-- =========================================
+-- 5b. DUES PAYERS (unit pembayar iuran — via migration 202608300002)
+--     Entitas pembayar terpisah dari akun; label ditampilkan dari
+--     organizations.dues_entity_label ("Warga"). Nonaktif (active=false), bukan hapus.
+-- =========================================
+create table dues_payers (
+  id uuid primary key default gen_random_uuid(),
+  organization_id uuid references organizations(id) on delete cascade not null,
+  name text not null,                    -- nomor unit / blok / nama warga
+  active boolean not null default true,
+  created_at timestamptz default now(),
+  unique (organization_id, name)
+);
+create index idx_dues_payers_org on dues_payers(organization_id);
+create index idx_transactions_dues_period on transactions(organization_id, dues_period);
+
+-- Constraint transaksi iuran (check yang berlaku via migration 202608300002):
+--   transactions_dues_pair_check  : dues_payer_id null ⇔ dues_period null
+--   transactions_dues_income_check : dues hanya untuk type='income'
+```
+
 ---
 
 ## 5. Row Level Security (RLS) Policies
@@ -177,6 +205,7 @@ alter table organization_members enable row level security;
 alter table categories enable row level security;
 alter table transactions enable row level security;
 alter table invitations enable row level security;
+alter table dues_payers enable row level security;   -- via migration 202608300002
 
 -- Helper function: cek apakah user adalah anggota organisasi tertentu
 create or replace function is_org_member(org_id uuid)
@@ -282,6 +311,17 @@ create policy "delete_transactions" on transactions
 -- INVITATIONS: hanya owner yang bisa kelola undangan
 create policy "manage_invitations" on invitations
   for all using (get_org_role(organization_id) in ('owner', 'co_owner'));
+
+-- DUES PAYERS: semua anggota bisa lihat, owner/co-owner/treasurer bisa kelola (via migration 202608300002).
+-- TIADA policy DELETE — unit dinonaktifkan (active=false) agar riwayat iuran tetap utuh.
+create policy "select_dues_payers" on dues_payers
+  for select using (is_org_member(organization_id));
+
+create policy "insert_dues_payers" on dues_payers
+  for insert with check (get_org_role(organization_id) in ('owner', 'co_owner', 'treasurer'));
+
+create policy "update_dues_payers" on dues_payers
+  for update using (get_org_role(organization_id) in ('owner', 'co_owner', 'treasurer'));
 ```
 
 **RLS Storage — upload bukti foto transaksi (US-3.1, via migration `202608300001_receipt_storage_policies.sql`):** bucket `receipts` private (dibuat manual di Dashboard), path objek `receipts/<organization_id>/<uuid>.jpg`. Policy di `storage.objects` memakai helper `is_org_member`/`get_org_role` dari folder pertama di path — jadi isolasi data tetap di level database:
@@ -359,6 +399,7 @@ kaskita/
 │   │       ├── dashboard/page.tsx      # ringkasan saldo saat ini, bulan berjalan (saldo awal/akhir), transaksi terbaru
 │   │       ├── transactions/page.tsx   # list + filter + form dialog
 │   │       ├── categories/page.tsx     # kelola kategori (dialog)
+│   │       ├── dues/page.tsx           # status iuran per warga/unit per bulan (semua role)
 │   │       ├── reports/page.tsx        # laporan bulanan (filter bulan/tahun + per kategori)
 │   │       ├── members/page.tsx        # kelola anggota (owner/co-owner)
 │   │       └── settings/page.tsx       # pengaturan organisasi
@@ -382,6 +423,8 @@ kaskita/
 │   ├── date-input.tsx                  # input tanggal + hint "dd/mm/yyyy" (placeholder native tak muncul di HP)
 │   ├── transactions-view.tsx / transaction-form-dialog.tsx
 │   ├── categories-view.tsx / category-form-dialog.tsx
+│   ├── dues-view.tsx / payer-manage-dialog.tsx   # status iuran + kelola unit pembayar (tambah/rename/nonaktif/link akun)
+│   ├── org-dues-label-form.tsx                   # ubah label entitas iuran (pengaturan, owner/co-owner)
 │   ├── reports-view.tsx
 │   ├── members-view.tsx / create-member-dialog.tsx / invite-member-dialog.tsx / member-manage-dialog.tsx
 │   ├── create-organization-form.tsx
@@ -418,7 +461,7 @@ Karena target pengguna (bendahara RT, ibu-ibu PKK, dll) kemungkinan besar akses 
 
 ### Prinsip UI
 - Layout mobile-first: desain dari lebar 375px dulu, baru scale up ke tablet/desktop pakai Tailwind breakpoint (`sm:`, `md:`, `lg:`)
-- **Bottom navigation bar di mobile** (bukan sidebar) — tab: Dashboard, Transaksi, Laporan, Anggota, Pengaturan, **Keluar** (menu **Kategori** HANYA di `DesktopNav`, tidak tampil di bottom nav mobile). Di desktop (`md+`), nav yang sama tampil sebagai **baris kedua di header** (`DesktopNav`). Bottom nav fixed di bawah: konten `<main>` wajib punya padding bawah `pb-[calc(5rem+env(safe-area-inset-bottom))]` (desktop `md:pb-6`) supaya card/tombol terakhir tidak tertutup; nav sendiri pakai `pb-[env(safe-area-inset-bottom)]` agar tidak tertutup home indicator iPhone. Pindah antar tab memakai aturan **dashboard sebagai root** (`push` dari dashboard ke tab lain, `replace` antar tab non-dashboard dan kembali ke dashboard) sehingga Back dari tab mana pun kembali ke Dashboard.
+- **Bottom navigation bar di mobile** (bukan sidebar) — tab: Dashboard, Transaksi, Laporan, Anggota, Pengaturan, **Keluar** (menu **Kategori** HANYA di `DesktopNav`, tidak tampil di bottom nav mobile). Di desktop (`md+`), nav yang sama tampil sebagai **baris kedua di header** (`DesktopNav`). Menu **Iuran** (pelacak status iuran per warga, `dues/page.tsx`) masuk lewat: kartu pintasan di halaman Dashboard (mobile) + item di `DesktopNav` (desktop) — **bukan** di bottom nav. Bottom nav fixed di bawah: konten `<main>` wajib punya padding bawah `pb-[calc(5rem+env(safe-area-inset-bottom))]` (desktop `md:pb-6`) supaya card/tombol terakhir tidak tertutup; nav sendiri pakai `pb-[env(safe-area-inset-bottom)]` agar tidak tertutup home indicator iPhone. Pindah antar tab memakai aturan **dashboard sebagai root** (`push` dari dashboard ke tab lain, `replace` antar tab non-dashboard dan kembali ke dashboard) sehingga Back dari tab mana pun kembali ke Dashboard.
 - **Tema per-akun**: 5 tema (`data-theme` = `klasik`, `kawaii`, `ocean`, `forest`, `sunrise`) didefinisikan sebagai CSS variables di `app/globals.css`; pilihan user disimpan di `auth.users.user_metadata.theme` dan disinkronkan ke `<html data-theme>` via `ThemeSetter` (dari server) / `ThemePicker` (saat user ganti); head script anti-flash membaca localStorage
 - Form input besar & mudah di-tap (minimum touch target 44x44px)
 - Angka nominal pakai keyboard numerik otomatis (`inputMode="numeric"`)

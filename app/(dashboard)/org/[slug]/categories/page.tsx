@@ -40,7 +40,9 @@ export default async function CategoriesPage({
 
   const { data: categories } = await supabase
     .from("categories")
-    .select("id, organization_id, name, type, is_deleted, created_at")
+    .select(
+      "id, organization_id, name, type, is_dues, dues_default_amount, is_deleted, created_at",
+    )
     .eq("organization_id", org.id)
     .eq("is_deleted", false)
     .order("type", { ascending: true })

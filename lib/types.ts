@@ -79,6 +79,38 @@ export const transactionSchema = z.object({
     .string()
     .trim()
     .max(200, "Deskripsi maksimal 200 karakter"),
+  // Field iuran (opsional, hanya relevan saat kategori bertanda is_dues).
+  dues_payer_id: z.string().optional(),
+  dues_period: z.string().optional(),
+});
+
+export const duesFieldsSchema = z
+  .object({
+    dues_payer_id: z.string().min(1, "Pilih pembayar"),
+    dues_period: z
+      .string()
+      .min(1, "Pilih bulan periode")
+      .regex(/^\d{4}-\d{2}$/, "Periode tidak valid"),
+  })
+  .refine(
+    (data) => (data.dues_payer_id === "") === (data.dues_period === ""),
+    { message: "Data iuran tidak lengkap." },
+  );
+
+export const payerSchema = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(1, "Nama wajib diisi")
+    .max(60, "Nama maksimal 60 karakter"),
+});
+
+export const orgDuesLabelSchema = z.object({
+  label: z
+    .string()
+    .trim()
+    .min(1, "Label wajib diisi")
+    .max(30, "Label maksimal 30 karakter"),
 });
 
 export type LoginForm = z.infer<typeof loginSchema>;
@@ -97,6 +129,12 @@ export const categorySchema = z.object({
     .min(1, "Nama kategori wajib diisi")
     .max(40, "Nama kategori maksimal 40 karakter"),
   type: z.enum(["income", "expense"]),
+  is_dues: z.boolean(),
+  dues_default_amount: z
+    .string()
+    .regex(/^\d{1,10}(\.\d{1,2})?$/, "Nominal tidak valid")
+    .optional()
+    .or(z.literal("")),
 });
 
 export type CategoryForm = z.infer<typeof categorySchema>;
@@ -105,6 +143,8 @@ export type CategoryOption = {
   id: string;
   name: string;
   type: "income" | "expense";
+  is_dues?: boolean;
+  dues_default_amount?: number | null;
 };
 
 export type CategoryRow = {
@@ -112,6 +152,8 @@ export type CategoryRow = {
   organization_id: string;
   name: string;
   type: "income" | "expense";
+  is_dues: boolean;
+  dues_default_amount: number | null;
   is_deleted: boolean;
   created_at: string;
 };
@@ -125,8 +167,19 @@ export type TransactionRow = {
   description: string | null;
   transaction_date: string;
   receipt_url: string | null;
+  dues_payer_id: string | null;
+  dues_period: string | null;
   created_by: string;
   categories: { name: string } | null;
+  dues_payers?: { name: string } | null;
+};
+
+export type PayerRow = {
+  id: string;
+  organization_id: string;
+  name: string;
+  active: boolean;
+  created_at: string;
 };
 
 export type MonthTotals = {

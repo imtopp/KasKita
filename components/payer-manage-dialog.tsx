@@ -1,0 +1,490 @@
+"use client";
+
+import { useCallback, useEffect, useRef, useState } from "react";
+import { ArrowLeft, KeyRound, Loader2, Pencil, Plus, Power } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
+import { createClient } from "@/lib/supabase/client";
+import { payerSchema } from "@/lib/types";
+import type { PayerRow } from "@/lib/types";
+import { cn } from "@/lib/utils";
+
+type Mode =
+  | { view: "list" }
+  | { view: "rename"; payer: PayerRow }
+  | { view: "accounts"; payer: PayerRow };
+
+type MemberOption = {
+  user_id: string;
+  name: string | null;
+  email: string;
+  role: string;
+};
+
+export function PayerManageDialog({
+  open,
+  onOpenChange,
+  orgId,
+  entityLabel,
+  payers,
+  canLink,
+  onChange,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  orgId: string;
+  entityLabel: string;
+  payers: PayerRow[];
+  canLink: boolean;
+  onChange: (payers: PayerRow[]) => void;
+}) {
+  const supabase = createClient();
+  const [mode, setMode] = useState<Mode>({ view: "list" });
+  const [nameInput, setNameInput] = useState("");
+  const [serverError, setServerError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [linkMap, setLinkMap] = useState<Map<string, boolean>>(new Map());
+  const [members, setMembers] = useState<MemberOption[] | null>(null);
+
+  const modeRef = useRef<Mode>(mode);
+  useEffect(() => {
+    modeRef.current = mode;
+  });
+
+  const becomeRename = useCallback((payer: PayerRow) => {
+    setNameInput(payer.name);
+    setServerError(null);
+    setMode({ view: "rename", payer });
+  }, []);
+
+  const becomeAccounts = useCallback(
+    async (payer: PayerRow) => {
+      setServerError(null);
+      setMode({ view: "accounts", payer });
+      if (members === null) {
+        const res = await fetch(
+          `/api/members?orgId=${encodeURIComponent(orgId)}`,
+        );
+        const data = await res.json().catch(() => ({}));
+        const memberList: MemberOption[] = Array.isArray(data.members)
+          ? data.members.map(
+              (member: {
+                user_id: string;
+                name: string | null;
+                email: string;
+                role: string;
+              }) => ({
+                user_id: member.user_id,
+                name: member.name,
+                email: member.email,
+                role: member.role,
+              }),
+            )
+          : [];
+        setMembers(memberList);
+      }
+      const { data: memberships } = await supabase
+        .from("organization_members")
+        .select("user_id, payer_id")
+        .eq("organization_id", orgId);
+      const next = new Map<string, boolean>();
+      for (const row of memberships ?? []) {
+        next.set(row.user_id, row.payer_id === payer.id);
+      }
+      setLinkMap(next);
+    },
+    [orgId, members, supabase],
+  );
+
+  async function addPayer() {
+    if (busy) return;
+    const parsed = payerSchema.safeParse({ name: nameInput });
+    if (!parsed.success) {
+      setServerError(parsed.error.issues[0].message);
+      return;
+    }
+    setBusy(true);
+    setServerError(null);
+    const id =
+      typeof crypto !== "undefined" && "randomUUID" in crypto
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    const { error } = await supabase.from("dues_payers").insert({
+      id,
+      organization_id: orgId,
+      name: parsed.data.name,
+    });
+    setBusy(false);
+    if (error) {
+      setServerError(
+        /row-level security|permission denied/i.test(error.message)
+          ? "Kamu tidak punya izin untuk mengelola " + entityLabel.toLowerCase() + "."
+          : /duplicate key/i.test(error.message)
+            ? `Nama ${entityLabel.toLowerCase()} ini sudah terdaftar.`
+            : "Gagal menyimpan. Coba lagi.",
+      );
+      return;
+    }
+    onChange([
+      ...payers,
+      {
+        id,
+        organization_id: orgId,
+        name: parsed.data.name,
+        active: true,
+        created_at: new Date().toISOString(),
+      },
+    ]);
+    setNameInput("");
+  }
+
+  async function renamePayer() {
+    if (!mode.view || mode.view !== "rename" || busy) return;
+    const payer = mode.payer;
+    const parsed = payerSchema.safeParse({ name: nameInput });
+    if (!parsed.success) {
+      setServerError(parsed.error.issues[0].message);
+      return;
+    }
+    setBusy(true);
+    setServerError(null);
+    const { error } = await supabase
+      .from("dues_payers")
+      .update({ name: parsed.data.name })
+      .eq("id", payer.id);
+    setBusy(false);
+    if (error) {
+      setServerError(
+        /row-level security|permission denied/i.test(error.message)
+          ? "Kamu tidak punya izin untuk mengubah data ini."
+          : /duplicate key/i.test(error.message)
+            ? "Nama ini sudah dipakai."
+            : "Gagal menyimpan. Coba lagi.",
+      );
+      return;
+    }
+    onChange(
+      payers.map((item) =>
+        item.id === payer.id ? { ...item, name: parsed.data.name } : item,
+      ),
+    );
+    setMode({ view: "list" });
+  }
+
+  async function toggleActive(payer: PayerRow) {
+    if (busy) return;
+    setBusy(true);
+    setServerError(null);
+    const next = !payer.active;
+    const { error } = await supabase
+      .from("dues_payers")
+      .update({ active: next })
+      .eq("id", payer.id);
+    setBusy(false);
+    if (error) {
+      setServerError(
+        /row-level security|permission denied/i.test(error.message)
+          ? "Kamu tidak punya izin mengubah status ini."
+          : "Gagal mengubah status. Coba lagi.",
+      );
+      return;
+    }
+    onChange(
+      payers.map((item) =>
+        item.id === payer.id ? { ...item, active: next } : item,
+      ),
+    );
+  }
+
+  async function saveLinks() {
+    if (!members || busy) return;
+    setBusy(true);
+    setServerError(null);
+    const payerId = mode.view === "accounts" ? mode.payer.id : null;
+    if (!payerId) return;
+    const updates = members.map(async (member) => {
+      const linked = linkMap.get(member.user_id) ?? false;
+      const nextValue = linked ? payerId : null;
+      const { error } = await supabase
+        .from("organization_members")
+        .update({ payer_id: nextValue })
+        .eq("organization_id", orgId)
+        .eq("user_id", member.user_id);
+      return error;
+    });
+    const errors = await Promise.all(updates);
+    const firstError = errors.find(Boolean);
+    setBusy(false);
+    if (firstError) {
+      setServerError("Gagal menyimpan tautan akun. Coba lagi.");
+      return;
+    }
+    setMode({ view: "list" });
+  }
+
+  const view = mode.view;
+  const viewPayer = view === "rename" || view === "accounts" ? mode.payer : null;
+  const labelLower = entityLabel.toLowerCase();
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Kelola {labelLower}</DialogTitle>
+          <DialogDescription>
+            Daftar {labelLower} untuk pelacakan iuran. Nonaktifkan tanpa
+            menghapus agar riwayat tetap tersimpan.
+          </DialogDescription>
+        </DialogHeader>
+
+        {serverError && (
+          <div className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            {serverError}
+          </div>
+        )}
+
+        {view === "list" ? (
+          <div className="space-y-4">
+            <form
+              className="flex gap-2"
+              onSubmit={(event) => {
+                event.preventDefault();
+                void addPayer();
+              }}
+            >
+              <Input
+                type="text"
+                placeholder={`Nama ${labelLower} (contoh: Pak Taufiq)`}
+                className="h-11 min-w-0 flex-1"
+                value={nameInput}
+                onChange={(event) => setNameInput(event.target.value)}
+                aria-label={`Nama ${labelLower}`}
+              />
+              <Button
+                type="submit"
+                className="h-11 px-4 text-base"
+                disabled={busy}
+              >
+                {busy ? (
+                  <Loader2 className="size-4 animate-spin" aria-hidden />
+                ) : (
+                  <Plus className="size-4" aria-hidden />
+                )}
+                Tambah
+              </Button>
+            </form>
+            {payers.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                Belum ada {labelLower}. Tambahkan di atas.
+              </p>
+            ) : (
+              <ul className="space-y-2">
+                {payers.map((payer) => (
+                  <li
+                    key={payer.id}
+                    className="flex flex-wrap items-center justify-between gap-2 rounded-xl border bg-card p-3"
+                  >
+                    <p
+                      className={cn(
+                        "min-w-0 text-sm font-medium",
+                        !payer.active && "text-muted-foreground",
+                      )}
+                    >
+                      {payer.name}
+                      {!payer.active && (
+                        <span className="ml-2 rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold">
+                          Nonaktif
+                        </span>
+                      )}
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {canLink && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="h-10 px-3 text-sm"
+                          disabled={busy}
+                          onClick={() => void becomeAccounts(payer)}
+                        >
+                          <KeyRound className="size-4" aria-hidden />
+                          Akun
+                        </Button>
+                      )}
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="h-10 px-3 text-sm"
+                        disabled={busy}
+                        onClick={() => becomeRename(payer)}
+                      >
+                        <Pencil className="size-4" aria-hidden />
+                        Edit
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className={cn(
+                          "h-10 px-3 text-sm",
+                          !payer.active && "text-destructive",
+                        )}
+                        disabled={busy}
+                        onClick={() => void toggleActive(payer)}
+                      >
+                        <Power className="size-4" aria-hidden />
+                        {payer.active ? "Nonaktifkan" : "Aktifkan"}
+                      </Button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {!canLink && (
+              <p className="text-xs text-muted-foreground">
+                Menautkan {labelLower} ke akun anggota hanya bisa dilakukan
+                owner/co-owner.
+              </p>
+            )}
+          </div>
+        ) : null}
+
+        {view === "rename" && viewPayer && (
+          <form
+            className="space-y-4"
+            onSubmit={(event) => {
+              event.preventDefault();
+              void renamePayer();
+            }}
+          >
+            <div className="space-y-2">
+              <Label>Nama {labelLower}</Label>
+              <Input
+                type="text"
+                className="h-11"
+                value={nameInput}
+                onChange={(event) => setNameInput(event.target.value)}
+                autoFocus
+              />
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                className="h-11"
+                onClick={() => setMode({ view: "list" })}
+                disabled={busy}
+              >
+                Batal
+              </Button>
+              <Button type="submit" className="h-11 text-base" disabled={busy}>
+                {busy && (
+                  <Loader2 className="size-4 animate-spin" aria-hidden />
+                )}
+                Simpan
+              </Button>
+            </DialogFooter>
+          </form>
+        )}
+
+        {view === "accounts" && (
+          <div className="space-y-4">
+            <Button
+              type="button"
+              variant="ghost"
+              className="h-10 gap-1 px-2 -ml-2 text-sm"
+              onClick={() => setMode({ view: "list" })}
+              disabled={busy}
+            >
+              <ArrowLeft className="size-4" aria-hidden />
+              Kembali
+            </Button>
+            <p className="text-sm">
+              Tautkan akun anggota ke{" "}
+              <span className="font-semibold">{viewPayer?.name}</span>. Akun
+              yang ditautkan akan melihat status {"\u201c"}rumah saya{"\u201d"}{" "}
+              di halaman Iuran.
+            </p>
+            {members === null ? (
+              <ul className="space-y-2">
+                {Array.from({ length: 3 }).map((_, index) => (
+                  <li key={index} className="rounded-xl border bg-card p-3">
+                    <Skeleton className="h-4 w-40" />
+                    <Skeleton className="mt-2 h-3 w-56" />
+                  </li>
+                ))}
+              </ul>
+            ) : members.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                Belum ada anggota di organisasi ini.
+              </p>
+            ) : (
+              <ul className="space-y-2">
+                {members.map((member) => {
+                  const linked = linkMap.get(member.user_id) ?? false;
+                  return (
+                    <li
+                      key={member.user_id}
+                      className="rounded-xl border bg-card p-3"
+                    >
+                      <label className="flex cursor-pointer items-center gap-3">
+                        <input
+                          type="checkbox"
+                          checked={linked}
+                          onChange={(event) => {
+                            const next = new Map(linkMap);
+                            next.set(member.user_id, event.target.checked);
+                            setLinkMap(next);
+                          }}
+                          className="size-4"
+                        />
+                        <span className="min-w-0">
+                          <span className="block truncate text-sm font-medium">
+                            {member.name ?? member.email}
+                          </span>
+                          <span className="block truncate text-xs text-muted-foreground">
+                            {member.email}
+                          </span>
+                        </span>
+                      </label>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+            <DialogFooter>
+              <DialogClose
+                render={
+                  <Button type="button" variant="outline" className="h-11" />
+                }
+              >
+                Tutup
+              </DialogClose>
+              <Button
+                type="button"
+                className="h-11 text-base"
+                disabled={busy || members === null}
+                onClick={() => void saveLinks()}
+              >
+                {busy && (
+                  <Loader2 className="size-4 animate-spin" aria-hidden />
+                )}
+                Simpan tautan
+              </Button>
+            </DialogFooter>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}

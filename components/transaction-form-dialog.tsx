@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
+import Link from "next/link";
 import { ImagePlus, Loader2, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -33,12 +34,17 @@ import {
 } from "@/lib/receipts";
 import { createClient } from "@/lib/supabase/client";
 import {
+  duesFieldsSchema,
   transactionSchema,
   type CategoryOption,
+  type PayerRow,
   type TransactionForm,
   type TransactionRow,
 } from "@/lib/types";
-import { todayISO } from "@/lib/utils";
+import { MONTH_NAMES, todayISO } from "@/lib/utils";
+
+const PERIOD_YEAR_BACK = 5;
+const PERIOD_YEAR_FORWARD = 2;
 
 function errorMessage(error: { message: string }): string {
   if (/row-level security|permission denied/i.test(error.message)) {
@@ -47,11 +53,28 @@ function errorMessage(error: { message: string }): string {
   return "Gagal menyimpan transaksi. Coba lagi.";
 }
 
+function addMonths(period: string, delta: number): string {
+  const [year, month] = period.split("-").map(Number);
+  const total = year * 12 + (month - 1) + delta;
+  const nextYear = Math.floor(total / 12);
+  const nextMonth = (total % 12) + 1;
+  return `${nextYear}-${String(nextMonth).padStart(2, "0")}`;
+}
+
+function clampInt(value: string, min: number, max: number): number {
+  const parsed = parseInt(value, 10);
+  if (!Number.isFinite(parsed)) return min;
+  return Math.min(max, Math.max(min, parsed));
+}
+
 export function TransactionFormDialog({
   open,
   onOpenChange,
   orgId,
   categories,
+  payers,
+  entityLabel,
+  duesHref,
   transaction,
   onSaved,
 }: {
@@ -59,11 +82,15 @@ export function TransactionFormDialog({
   onOpenChange: (open: boolean) => void;
   orgId: string;
   categories: CategoryOption[];
+  payers: PayerRow[];
+  entityLabel: string;
+  duesHref: string;
   transaction: TransactionRow | null;
   onSaved: () => void;
 }) {
   const supabase = createClient();
   const [serverError, setServerError] = useState<string | null>(null);
+  const [months, setMonths] = useState(1);
 
   // State foto bukti.
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
@@ -96,6 +123,7 @@ export function TransactionFormDialog({
     handleSubmit,
     watch,
     setValue,
+    getValues,
     reset,
     setError,
     formState: { errors, isSubmitting },
@@ -106,6 +134,8 @@ export function TransactionFormDialog({
       amount: "",
       transaction_date: todayISO(),
       description: "",
+      dues_payer_id: "",
+      dues_period: "",
     },
   });
 
@@ -115,6 +145,7 @@ export function TransactionFormDialog({
       setReceiptError(null);
       setReceiptFile(null);
       setRemoveReceipt(false);
+      setMonths(1);
       setExistingPreview(null);
       setPreview(null);
       reset(
@@ -125,6 +156,8 @@ export function TransactionFormDialog({
               amount: String(transaction.amount),
               transaction_date: transaction.transaction_date,
               description: transaction.description ?? "",
+              dues_payer_id: transaction.dues_payer_id ?? "",
+              dues_period: transaction.dues_period ?? "",
             }
           : {
               type: "expense",
@@ -132,6 +165,8 @@ export function TransactionFormDialog({
               amount: "",
               transaction_date: todayISO(),
               description: "",
+              dues_payer_id: "",
+              dues_period: "",
             },
       );
 
@@ -157,7 +192,13 @@ export function TransactionFormDialog({
   const type = watch("type");
   const categoryId = watch("category_id");
   const transactionDate = watch("transaction_date");
+  const duesPayerId = watch("dues_payer_id");
+  const duesPeriod = watch("dues_period");
   const typeCategories = categories.filter((c) => c.type === type);
+  const selectedCategory =
+    categories.find((c) => c.id === categoryId && c.type === type) ?? null;
+  const isDues = !!selectedCategory?.is_dues;
+  const duesDefault = selectedCategory?.dues_default_amount ?? null;
 
   useEffect(() => {
     if (!categoryId) return;
@@ -168,6 +209,15 @@ export function TransactionFormDialog({
       setValue("category_id", "", { shouldValidate: true });
     }
   }, [categoryId, type, categories, setValue]);
+
+  // Saat pilih kategori iuran, isi nominal dgn standar kalau belum terisi.
+  useEffect(() => {
+    if (!isDues || transaction || !duesDefault) return;
+    const amount = getValues("amount");
+    if (amount === "" || Number(amount) <= 0) {
+      setValue("amount", String(duesDefault));
+    }
+  }, [isDues, transaction, duesDefault, getValues, setValue]);
 
   async function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -194,6 +244,18 @@ export function TransactionFormDialog({
   const onSubmit = handleSubmit(async (values) => {
     setServerError(null);
 
+    if (isDues && months > 1 && !duesDefault) {
+      setError("amount", {
+        message:
+          "Atur nominal standar iuran di Kelola Kategori dulu untuk bayar beberapa bulan sekaligus, atau bayar per bulan satu-satu.",
+      });
+      return;
+    }
+    // Mode beberapa bulan dipatok nominal standar per bulan.
+    if (isDues && months > 1 && duesDefault) {
+      values.amount = String(duesDefault);
+    }
+
     const parsed = transactionSchema.safeParse(values);
     if (!parsed.success) {
       for (const issue of parsed.error.issues) {
@@ -209,9 +271,27 @@ export function TransactionFormDialog({
       }
       return;
     }
+    // Dipisah dari variabel `parsed` agar narrowing tetap berlaku di dalam
+    // closure `baseRecord()` di bawah ini.
+    const data = parsed.data;
 
-    const amount = Number(parsed.data.amount);
-    if (!(amount > 0)) {
+    let duesPayerIdValue: string | null = null;
+    let period: string | null = null;
+    const perMonth = Number(data.amount);
+    if (isDues) {
+      const duesCheck = duesFieldsSchema.safeParse({
+        dues_payer_id: data.dues_payer_id ?? "",
+        dues_period: data.dues_period ?? "",
+      });
+      if (!duesCheck.success) {
+        setServerError(duesCheck.error.issues[0].message);
+        return;
+      }
+      duesPayerIdValue = data.dues_payer_id!;
+      period = data.dues_period!;
+    }
+
+    if (!(perMonth > 0)) {
       setError("amount", { message: "Nominal harus lebih dari 0" });
       return;
     }
@@ -248,16 +328,24 @@ export function TransactionFormDialog({
       oldToDelete = existingReceipt;
     }
 
+    function baseRecord() {
+      return {
+        category_id: data.category_id,
+        type: data.type,
+        description: data.description || null,
+        transaction_date: data.transaction_date,
+        receipt_url: receiptUrl,
+        dues_payer_id: duesPayerIdValue,
+        dues_period: period,
+      };
+    }
+
     if (transaction) {
       const { error } = await supabase
         .from("transactions")
         .update({
-          category_id: parsed.data.category_id,
-          type: parsed.data.type,
-          amount,
-          transaction_date: parsed.data.transaction_date,
-          description: parsed.data.description || null,
-          receipt_url: receiptUrl,
+          ...baseRecord(),
+          amount: perMonth,
         })
         .eq("id", transaction.id);
       if (error) {
@@ -265,19 +353,27 @@ export function TransactionFormDialog({
         setServerError(errorMessage(error));
         return;
       }
+    } else if (months > 1 && period && duesPayerIdValue) {
+      const records = Array.from({ length: months }, (_, i) => ({
+        organization_id: orgId,
+        ...baseRecord(),
+        dues_period: addMonths(period!, i),
+        amount: perMonth,
+        created_by: user.id,
+      }));
+      const { error } = await supabase.from("transactions").insert(records);
+      if (error) {
+        if (uploadedPath) void deleteReceipt(supabase, uploadedPath);
+        setServerError(errorMessage(error));
+        return;
+      }
     } else {
-      const { error } = await supabase
-        .from("transactions")
-        .insert({
-          organization_id: orgId,
-          category_id: parsed.data.category_id,
-          type: parsed.data.type,
-          amount,
-          transaction_date: parsed.data.transaction_date,
-          description: parsed.data.description || null,
-          receipt_url: receiptUrl,
-          created_by: user.id,
-        });
+      const { error } = await supabase.from("transactions").insert({
+        organization_id: orgId,
+        ...baseRecord(),
+        amount: perMonth,
+        created_by: user.id,
+      });
       if (error) {
         if (uploadedPath) void deleteReceipt(supabase, uploadedPath);
         setServerError(errorMessage(error));
@@ -293,11 +389,17 @@ export function TransactionFormDialog({
 
     onOpenChange(false);
     // Refresh ditunda & di-gate oleh scheduleRefresh di TransactionsView agar
-    // tidak jatuh di jendela exit+hold popup dialog (menyebabkan popup
-    // "muncul lagi" sepersekian detik setelah fadeout — kambuh yang hanya
-    // muncul dengan latensi jaringan tinggi / throttling).
+    // tidak jatuh di jendela exit+hold popup dialog.
     onSaved();
   });
+
+  const periodMonth = duesPeriod ? Number(duesPeriod.slice(5, 7)) : null;
+  const periodYear = duesPeriod ? Number(duesPeriod.slice(0, 4)) : null;
+  const currentYear = new Date().getFullYear();
+  const periodYears = Array.from(
+    { length: PERIOD_YEAR_BACK + PERIOD_YEAR_FORWARD + 1 },
+    (_, i) => currentYear - PERIOD_YEAR_BACK + i,
+  );
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -338,17 +440,34 @@ export function TransactionFormDialog({
             </div>
             <div className="space-y-2">
               <Label>Nominal (Rp)</Label>
-              <Input
-                type="text"
-                inputMode="numeric"
-                placeholder="0"
-                className="h-11"
-                aria-invalid={!!errors.amount}
-                {...register("amount")}
-              />
+              {isDues && months > 1 ? (
+                <Input
+                  type="text"
+                  inputMode="numeric"
+                  value={String(duesDefault ?? "")}
+                  disabled
+                  className="h-11"
+                  readOnly
+                />
+              ) : (
+                <Input
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="0"
+                  className="h-11"
+                  aria-invalid={!!errors.amount}
+                  {...register("amount")}
+                />
+              )}
               {errors.amount && (
                 <p className="text-sm text-destructive">
                   {errors.amount.message}
+                </p>
+              )}
+              {isDues && months > 1 && duesDefault && (
+                <p className="text-xs text-muted-foreground">
+                  {months} bulan × {formatNominal(duesDefault)} ={" "}
+                  {formatNominal(duesDefault * months)}
                 </p>
               )}
             </div>
@@ -385,6 +504,138 @@ export function TransactionFormDialog({
               </p>
             )}
           </div>
+
+          {isDues && (
+            <div className="space-y-4 rounded-xl border bg-muted/40 p-3">
+              <div className="space-y-2">
+                <Label>Dibayar oleh ({entityLabel})</Label>
+                {payers.length === 0 ? (
+                  <div className="text-sm text-muted-foreground">
+                    Belum ada {entityLabel.toLowerCase()} terdaftar.{" "}
+                    <Link
+                      href={duesHref}
+                      className="font-medium text-primary underline"
+                    >
+                      Kelola {entityLabel.toLowerCase()} di halaman Iuran
+                    </Link>{" "}
+                    dulu.
+                  </div>
+                ) : (
+                  <Select
+                    value={duesPayerId || "__none__"}
+                    onValueChange={(value: string | null) => {
+                      if (value)
+                        setValue("dues_payer_id", value, {
+                          shouldValidate: true,
+                        });
+                    }}
+                  >
+                    <SelectTrigger className="h-11 w-full data-[size=default]:h-11">
+                      <SelectValue placeholder={`Pilih ${entityLabel.toLowerCase()}`} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__none__" disabled>
+                        Pilih {entityLabel.toLowerCase()}
+                      </SelectItem>
+                      {payers.map((payer) => (
+                        <SelectItem key={payer.id} value={payer.id}>
+                          {payer.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label>Periode (untuk bulan apa)</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  <Select
+                    value={periodMonth ? String(periodMonth) : "__none__"}
+                    onValueChange={(value: string | null) => {
+                      if (!value || value === "__none__" || !periodYear) return;
+                      setValue(
+                        "dues_period",
+                        `${periodYear}-${String(Number(value)).padStart(2, "0")}`,
+                        { shouldValidate: true },
+                      );
+                    }}
+                  >
+                    <SelectTrigger className="h-11 w-full data-[size=default]:h-11">
+                      <SelectValue placeholder="Bulan" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__none__" disabled>
+                        Bulan
+                      </SelectItem>
+                      {MONTH_NAMES.map((name, index) => (
+                        <SelectItem
+                          key={name}
+                          value={String(index + 1)}
+                          disabled={periodYear === null}
+                        >
+                          {name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Select
+                    value={periodYear ? String(periodYear) : "__none__"}
+                    onValueChange={(value: string | null) => {
+                      if (!value || value === "__none__") return;
+                      setValue(
+                        "dues_period",
+                        `${value}-${String(periodMonth ?? 1).padStart(2, "0")}`,
+                        { shouldValidate: true },
+                      );
+                    }}
+                  >
+                    <SelectTrigger className="h-11 w-full data-[size=default]:h-11">
+                      <SelectValue placeholder="Tahun" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__none__" disabled>
+                        Tahun
+                      </SelectItem>
+                      {periodYears.map((year) => (
+                        <SelectItem key={year} value={String(year)}>
+                          {year}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                {errors.dues_period && (
+                  <p className="text-sm text-destructive">
+                    {errors.dues_period.message}
+                  </p>
+                )}
+              </div>
+              {!transaction && (
+                <div className="space-y-2">
+                  <Label htmlFor="duesMonths">Bayar untuk berapa bulan</Label>
+                  <Input
+                    id="duesMonths"
+                    type="number"
+                    inputMode="numeric"
+                    min={1}
+                    max={12}
+                    value={String(months)}
+                    onChange={(event) =>
+                      setMonths(clampInt(event.target.value, 1, 12))
+                    }
+                    className="h-11"
+                  />
+                  {months > 1 && !duesDefault && (
+                    <p className="text-xs text-muted-foreground">
+                      Isi nominal standar iuran di Kelola Kategori untuk
+                      membayar beberapa bulan sekaligus.
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
           <div className="space-y-2">
             <Label htmlFor="txDate">Tanggal</Label>
             <DateInput
@@ -512,11 +763,19 @@ export function TransactionFormDialog({
               {isSubmitting && (
                 <Loader2 className="size-4 animate-spin" aria-hidden />
               )}
-              {isSubmitting ? "Menyimpan..." : "Simpan"}
+              {isSubmitting
+                ? months > 1
+                  ? `Menyimpan ${months} transaksi...`
+                  : "Menyimpan..."
+                : "Simpan"}
             </Button>
           </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>
   );
+}
+
+function formatNominal(value: number): string {
+  return "Rp " + value.toLocaleString("id-ID");
 }

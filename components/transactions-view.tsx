@@ -31,12 +31,17 @@ import { ReceiptViewDialog } from "@/components/receipt-view-dialog";
 import { TransactionFormDialog } from "@/components/transaction-form-dialog";
 import { deleteReceipt } from "@/lib/receipts";
 import { createClient } from "@/lib/supabase/client";
-import type { CategoryOption, TransactionRow } from "@/lib/types";
+import type {
+  CategoryOption,
+  PayerRow,
+  TransactionRow,
+} from "@/lib/types";
 import {
   cn,
   dateRangeForPreset,
   formatDateID,
   formatRupiah,
+  MONTH_NAMES,
   type DatePresetKey,
 } from "@/lib/utils";
 
@@ -60,6 +65,8 @@ export function TransactionsView({
   orgId,
   transactions,
   categories,
+  payers,
+  entityLabel,
   canManage,
   page,
   totalPages,
@@ -68,6 +75,8 @@ export function TransactionsView({
   orgId: string;
   transactions: TransactionRow[];
   categories: CategoryOption[];
+  payers: PayerRow[];
+  entityLabel: string;
   canManage: boolean;
   page: number;
   totalPages: number;
@@ -115,6 +124,7 @@ export function TransactionsView({
   }, [router]);
 
   const hasActiveFilters = !!(filters.type || filters.category || filters.from || filters.to);
+  const duesHref = `/org/${pathname.split("/")[2]}/dues`;
 
   const visibleTransactions = transactions.filter(
     (transaction) => !removedIds.has(transaction.id),
@@ -421,6 +431,16 @@ export function TransactionsView({
                   <p className="text-sm font-medium">
                     {transaction.categories?.name ?? "Tanpa kategori"}
                   </p>
+                  {transaction.dues_payers?.name && (
+                    <p className="text-sm text-muted-foreground">
+                      {transaction.dues_payers.name} ·{" "}
+                      {transaction.dues_period
+                        ? `${MONTH_NAMES[
+                            Number(transaction.dues_period.slice(5, 7)) - 1
+                          ]} ${transaction.dues_period.slice(0, 4)}`
+                        : ""}
+                    </p>
+                  )}
                   {transaction.description && (
                     <p className="break-words text-sm text-muted-foreground">
                       {transaction.description}
@@ -513,6 +533,9 @@ export function TransactionsView({
         onOpenChange={setFormOpen}
         orgId={orgId}
         categories={categories}
+        payers={payers}
+        entityLabel={entityLabel}
+        duesHref={duesHref}
         transaction={editing}
         onSaved={scheduleRefresh}
       />

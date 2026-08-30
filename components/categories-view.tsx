@@ -51,7 +51,14 @@ function CategoryList({
               key={category.id}
               className="flex items-center justify-between gap-3 rounded-xl border bg-card p-4 transition-colors duration-200 active:bg-muted/40"
             >
-              <p className="min-w-0 text-sm font-medium">{category.name}</p>
+              <div className="min-w-0">
+                <p className="text-sm font-medium">{category.name}</p>
+                {category.is_dues && (
+                  <span className="mt-1 inline-block rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">
+                    Iuran
+                  </span>
+                )}
+              </div>
               {canManage && (
                 <div className="flex shrink-0 gap-2">
                   <Button
@@ -156,8 +163,8 @@ export function CategoriesView({
 
       {!canManage && (
         <div className="rounded-xl bg-muted px-4 py-3 text-sm text-muted-foreground">
-          Hanya owner/treasurer yang bisa menambah, mengedit, atau menghapus
-          kategori.
+          Hanya owner/co-owner/bendahara yang bisa menambah, mengedit, atau
+          menghapus kategori.
         </div>
       )}
 

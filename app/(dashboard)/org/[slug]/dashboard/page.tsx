@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ClipboardList } from "lucide-react";
 
 import { AnimatedNumber } from "@/components/animated-number";
 import {
@@ -42,12 +43,14 @@ export default async function OrgDashboardPage({
 
   const { data: org } = await supabase
     .from("organizations")
-    .select("id, name, slug")
+    .select("id, name, slug, dues_entity_label")
     .eq("slug", slug)
     .single();
   if (!org) {
     notFound();
   }
+
+  const entityLabel = org.dues_entity_label ?? "Warga";
 
   const [incomeRes, expenseRes] = await Promise.all([
     supabase
@@ -121,6 +124,12 @@ export default async function OrgDashboardPage({
     }),
   );
 
+  const { count: activePayers } = await supabase
+    .from("dues_payers")
+    .select("id", { count: "exact", head: true })
+    .eq("organization_id", org.id)
+    .eq("active", true);
+
   return (
     <div className="space-y-4">
       <div>
@@ -189,6 +198,25 @@ export default async function OrgDashboardPage({
           </div>
         </CardContent>
       </Card>
+
+      {(activePayers ?? 0) > 0 && (
+        <Link href={`/org/${slug}/dues`} className="block">
+          <Card className="transition-colors duration-200 hover:border-primary/40 active:bg-muted/40">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <ClipboardList className="size-4 text-primary" aria-hidden />
+                Iuran {entityLabel}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground">
+                Cek status pembayaran {activePayers} {entityLabel.toLowerCase()}{" "}
+                aktif pada bulan ini.
+              </p>
+            </CardContent>
+          </Card>
+        </Link>
+      )}
 
       <Card>
         <CardHeader>

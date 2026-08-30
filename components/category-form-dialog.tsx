@@ -73,11 +73,25 @@ export function CategoryFormDialog({
       setServerError(null);
       reset(
         category
-          ? { name: category.name, type: category.type }
-          : { name: "", type: "expense" },
+          ? {
+              name: category.name,
+              type: category.type,
+              is_dues: category.is_dues,
+              dues_default_amount: category.dues_default_amount
+                ? String(category.dues_default_amount)
+                : "",
+            }
+          : {
+              name: "",
+              type: "expense",
+              is_dues: false,
+              dues_default_amount: "",
+            },
       );
     }
   }, [open, category, reset]);
+
+  const isDues = watch("is_dues");
 
   const onSubmit = handleSubmit(async (values) => {
     setServerError(null);
@@ -85,10 +99,20 @@ export function CategoryFormDialog({
     const parsed = categorySchema.safeParse(values);
     if (!parsed.success) {
       for (const issue of parsed.error.issues) {
-        setError(issue.path[0] as "name" | "type", {
+        setError(issue.path[0] as "name" | "type" | "dues_default_amount", {
           message: issue.message,
         });
       }
+      return;
+    }
+
+    const duesDefault = parsed.data.dues_default_amount
+      ? Number(parsed.data.dues_default_amount)
+      : null;
+    if (duesDefault !== null && !(duesDefault > 0)) {
+      setError("dues_default_amount", {
+        message: "Nominal harus lebih dari 0",
+      });
       return;
     }
 
@@ -98,13 +122,21 @@ export function CategoryFormDialog({
         .update({
           name: parsed.data.name,
           type: parsed.data.type,
+          is_dues: parsed.data.is_dues,
+          dues_default_amount: duesDefault,
         })
         .eq("id", category.id);
       if (error) {
         setServerError(errorMessage(error));
         return;
       }
-      onSaved({ ...category, name: parsed.data.name, type: parsed.data.type });
+      onSaved({
+        ...category,
+        name: parsed.data.name,
+        type: parsed.data.type,
+        is_dues: parsed.data.is_dues,
+        dues_default_amount: duesDefault,
+      });
     } else {
       const id =
         typeof crypto !== "undefined" && "randomUUID" in crypto
@@ -117,6 +149,8 @@ export function CategoryFormDialog({
           organization_id: orgId,
           name: parsed.data.name,
           type: parsed.data.type,
+          is_dues: parsed.data.is_dues,
+          dues_default_amount: duesDefault,
         });
       if (error) {
         setServerError(errorMessage(error));
@@ -127,6 +161,8 @@ export function CategoryFormDialog({
         organization_id: orgId,
         name: parsed.data.name,
         type: parsed.data.type,
+        is_dues: parsed.data.is_dues,
+        dues_default_amount: duesDefault,
         is_deleted: false,
         created_at: new Date().toISOString(),
       });
@@ -185,6 +221,55 @@ export function CategoryFormDialog({
               </SelectContent>
             </Select>
           </div>
+          <div className="space-y-2">
+            <Label>Tipe pengelolaan</Label>
+            <Select
+              value={isDues ? "iuran" : "biasa"}
+              onValueChange={(value: string | null) => {
+                setValue("is_dues", value === "iuran");
+                if (value !== "iuran") {
+                  setValue("dues_default_amount", "");
+                }
+              }}
+            >
+              <SelectTrigger className="h-11 w-full data-[size=default]:h-11">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="biasa">Transaksi biasa</SelectItem>
+                <SelectItem value="iuran">Iuran (per warga)</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              Iuran wajib mencatat pembayar dan bulan periode saat transaksi
+              dibuat, dan muncul di halaman Iuran.
+            </p>
+          </div>
+          {isDues && (
+            <div className="space-y-2">
+              <Label htmlFor="catDuesDefault">
+                Nominal iuran per bulan (Rp)
+              </Label>
+              <Input
+                id="catDuesDefault"
+                type="text"
+                inputMode="numeric"
+                placeholder="0"
+                className="h-11"
+                aria-invalid={!!errors.dues_default_amount}
+                {...register("dues_default_amount")}
+              />
+              {errors.dues_default_amount && (
+                <p className="text-sm text-destructive">
+                  {errors.dues_default_amount.message}
+                </p>
+              )}
+              <p className="text-xs text-muted-foreground">
+                Nominal standar tiap bulan. Bisa dikosongkan dulu; transaksi
+                iuran tetap bisa dicatat dengan nominal bebas.
+              </p>
+            </div>
+          )}
           <DialogFooter>
             <DialogClose render={<Button type="button" variant="outline" className="h-11" />}>
               Batal

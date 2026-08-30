@@ -57,7 +57,7 @@ export default async function TransactionsPage({
   let query = supabase
     .from("transactions")
     .select(
-      "id, organization_id, category_id, type, amount, description, transaction_date, receipt_url, created_by, categories(name)",
+      "id, organization_id, category_id, type, amount, description, transaction_date, receipt_url, dues_payer_id, dues_period, created_by, categories(name), dues_payers(name)",
       { count: "exact" },
     )
     .eq("organization_id", org.id);
@@ -83,10 +83,24 @@ export default async function TransactionsPage({
 
   const { data: categories } = await supabase
     .from("categories")
-    .select("id, name, type")
+    .select("id, name, type, is_dues, dues_default_amount")
     .eq("organization_id", org.id)
     .eq("is_deleted", false)
     .order("name");
+
+  const { data: payers } = await supabase
+    .from("dues_payers")
+    .select("id, organization_id, name, active, created_at")
+    .eq("organization_id", org.id)
+    .eq("active", true)
+    .order("name");
+
+  const { data: orgDetails } = await supabase
+    .from("organizations")
+    .select("dues_entity_label")
+    .eq("id", org.id)
+    .single();
+  const entityLabel = orgDetails?.dues_entity_label ?? "Warga";
 
   const totalPages = Math.max(1, Math.ceil((count ?? 0) / PAGE_SIZE));
 
@@ -100,11 +114,15 @@ export default async function TransactionsPage({
       description: string | null;
       transaction_date: string;
       receipt_url: string | null;
+      dues_payer_id: string | null;
+      dues_period: string | null;
       created_by: string;
       categories: { name: string } | { name: string }[];
+      dues_payers: { name: string } | { name: string }[];
     }) => ({
       ...transaction,
       categories: categoryFromEmbedded(transaction.categories),
+      dues_payers: categoryFromEmbedded(transaction.dues_payers),
     }),
   );
 
@@ -113,6 +131,8 @@ export default async function TransactionsPage({
       orgId={org.id}
       transactions={normalized}
       categories={categories ?? []}
+      payers={payers ?? []}
+      entityLabel={entityLabel}
       canManage={canManage}
       page={page}
       totalPages={totalPages}

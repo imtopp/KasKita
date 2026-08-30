@@ -206,6 +206,15 @@ Fitur berikut sudah dikerjakan atas permintaan eksplisit user dan menjadi bagian
 - **Prefetch tab navigasi**: semua link menu di bottom/desktop nav diberi `prefetch` — pindah tab terasa instan.
 - **Kirim ulang undangan**: undangan belum diterima (termasuk kedaluwarsa) ditampilkan di halaman Anggota dengan tombol **Kirim ulang** yang membuat undangan baru (token + masa berlaku baru) dan mengirim ulang email.
 - **PWA update prompt**: saat versi baru terpasang, muncul banner "Versi baru KasKita tersedia" + tombol Muat ulang (SW tidak lagi `skipWaiting` otomatis; `sw.js` di-serve dengan `must-revalidate`).
+- **Upload foto bukti transaksi (opsional, US-3.1)** — lihat entri di atas (tanggal 30 Agustus 2026).
+- **Pelacakan iuran per warga/unit** (migration `supabase/migrations/202608300002_dues_tracking.sql`):
+  - [x] Kategori bisa ditandai **Iuran (per warga)** via flag `is_dues` + nominal standar `dues_default_amount` (nullable); kategori default "Iuran Warga" otomatis ber-flag `is_dues` saat organisasi baru dibuat (trigger `create_default_categories` di-update `create or replace`)
+  - [x] Entitas pembayar iuran = tabel **`dues_payers`** (terpisah dari akun, mis. "Rumah 01" / "Blok A"); label tampilan dikonfigurasi per organisasi di Pengaturan (`organizations.dues_entity_label`, default "Warga") oleh owner/co-owner
+  - [x] **1 transaksi = 1 bulan iuran**: form transaksi iuran memakai dropdown unit pembayar + pemilih periode (bulan & tahun, **boleh backdated** — rentang 5 tahun ke belakang s.d. 2 tahun ke depan); input "bayar untuk berapa bulan" memecah jadi N transaksi dengan nominal per bulan dipatok `dues_default_amount`; pencicilan tetap bisa (nominal bebas < target); `dues_period` + `dues_payer_id` berpasangan (constraint `transactions_dues_pair_check`), iuran hanya untuk income (`transactions_dues_income_check`)
+  - [x] Halaman **Iuran** (semua role) menampilkan status per unit per bulan (**Belum / Cicil (Rp x / Rp y) / Lunas**), ringkasan X dari Y lunas + total nominal masuk bulan terpilih, navigasi bulan/tahun, riwayat per unit, dan badge "Kamu" untuk unit milik akun yang login
+  - [x] Kelola unit pembayar oleh owner/co-owner/treasurer: tambah, ganti nama, **nonaktifkan** (soft — tanpa hapus permanen agar riwayat tetap utuh), dan **link akun → unit** (anggota memilih unitnya sendiri via dropdown akun)
+  - [x] Entri menu Iuran: kartu pintasan di Dashboard (mobile) + item di `DesktopNav` (desktop) — bukan di bottom nav
+  - [x] RLS `dues_payers`: semua anggota boleh lihat; insert/update hanya owner/co-owner/treasurer; tidak ada policy DELETE
 
 
 
