@@ -291,7 +291,7 @@ export function DuesView({
         )}
       </div>
 
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex items-center gap-2">
         <Button
           variant="outline"
           className="h-11 w-11 px-0"
@@ -342,37 +342,38 @@ export function DuesView({
         >
           <ChevronRight className="size-5" aria-hidden />
         </Button>
-        <div className="ml-auto flex shrink-0 flex-wrap items-center gap-2">
-          <Button
-            variant="outline"
-            onClick={exportDuesPdf}
-            disabled={exporting}
-          >
-            {exporting ? (
-              <Loader2 className="size-4 animate-spin" aria-hidden />
-            ) : (
-              <Download className="size-4" aria-hidden />
-            )}
-            {exporting ? "Membuat PDF…" : `Export PDF ${periodYear}`}
-          </Button>
-          {activePayers.length > 0 && (
-            <label className="flex cursor-pointer items-center gap-2 text-sm text-muted-foreground">
-              <input
-                type="checkbox"
-                checked={showInactive}
-                onChange={(event) => setShowInactive(event.target.checked)}
-                className="size-4"
-              />
-              Tampilkan nonaktif
-            </label>
+      </div>
+
+      <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+        <Button
+          variant="outline"
+          onClick={exportDuesPdf}
+          disabled={exporting}
+        >
+          {exporting ? (
+            <Loader2 className="size-4 animate-spin" aria-hidden />
+          ) : (
+            <Download className="size-4" aria-hidden />
           )}
-        </div>
-        {exportError && (
-          <p className="w-full text-sm font-medium text-destructive">
-            {exportError}
-          </p>
+          {exporting ? "Membuat PDF…" : `Export PDF ${periodYear}`}
+        </Button>
+        {activePayers.length > 0 && (
+          <label className="flex cursor-pointer items-center gap-2 text-sm text-muted-foreground">
+            <input
+              type="checkbox"
+              checked={showInactive}
+              onChange={(event) => setShowInactive(event.target.checked)}
+              className="size-4"
+            />
+            Tampilkan nonaktif
+          </label>
         )}
       </div>
+      {exportError && (
+        <p className="mt-2 w-full text-sm font-medium text-destructive">
+          {exportError}
+        </p>
+      )}
 
       <Card className="p-4">
         <div className="grid grid-cols-3 gap-2 text-center">

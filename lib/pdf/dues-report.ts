@@ -110,7 +110,7 @@ export async function generateDuesReportPdf(params: {
     if (lunasAll) lunasYear += 1;
   }
 
-  const targetYear = monthlyTarget * 12;
+  const targetYear = monthlyTarget * 12 * payers.length;
   const remainingYear = Math.max(0, targetYear - collectedYear);
 
   const matrixBody: TableCell[][] = [
@@ -178,7 +178,7 @@ export async function generateDuesReportPdf(params: {
       { text: "Sisa", style: "tableHeader", alignment: "right" },
     ],
     ...categoriesWithTarget.map((category) => {
-      const perMonth = category.dues_default_amount ?? 0;
+      const perMonth = (category.dues_default_amount ?? 0) * payers.length;
       const perYear = perMonth * 12;
       const collected = paidByCategory.get(category.id) ?? 0;
       return [
@@ -235,6 +235,7 @@ export async function generateDuesReportPdf(params: {
   ];
 
   const docDefinition: TDocumentDefinitions = {
+    pageSize: "A4",
     pageOrientation: "landscape",
     pageMargins: [40, 40, 40, 60],
     defaultStyle: { font: "Roboto", fontSize: 10 },
@@ -288,7 +289,7 @@ export async function generateDuesReportPdf(params: {
       {
         table: {
           headerRows: 1,
-          widths: [90, ...Array(12).fill(44), 66],
+          widths: [90, ...Array(12).fill("*"), "auto"],
           body: matrixBody,
         },
         fontSize: 8,
