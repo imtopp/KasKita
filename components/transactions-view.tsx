@@ -194,6 +194,13 @@ export function TransactionsView({
       amount: tx.amount,
       description: tx.description,
       transaction_date: tx.transaction_date,
+      receipt_url: tx.receipt_url,
+      // Atribut iuran wajib ikut dipulihkan: tanpa ini, transaksi iuran yang
+      // di-undo kehilangan status "dibayar oleh + periode" (iuran warga jadi
+      // berubah) padahal data aslinya sudah DIHAPUS dari DB saat delete — nilai
+      // bisa diambil dari object list yang masih pegang salinan lengkap.
+      dues_payer_id: tx.dues_payer_id,
+      dues_period: tx.dues_period,
       created_by: tx.created_by,
     });
     if (error) {
