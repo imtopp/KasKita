@@ -45,6 +45,9 @@ import { MONTH_NAMES, todayISO } from "@/lib/utils";
 
 const PERIOD_YEAR_BACK = 5;
 const PERIOD_YEAR_FORWARD = 2;
+// Batas aman pecahan multi-bulan (52 bulan = >4 tahun; nominal yang lebih besar
+// dari itu diminta dibagi manual agar tidak membuat ratusan transaksi sekali jalan).
+const MAX_DUES_MONTHS = 48;
 
 function errorMessage(error: { message: string }): string {
   if (/row-level security|permission denied/i.test(error.message)) {
@@ -61,10 +64,13 @@ function addMonths(period: string, delta: number): string {
   return `${nextYear}-${String(nextMonth).padStart(2, "0")}-01`;
 }
 
-function clampInt(value: string, min: number, max: number): number {
-  const parsed = parseInt(value, 10);
-  if (!Number.isFinite(parsed)) return min;
-  return Math.min(max, Math.max(min, parsed));
+// Bagaimana nominal total dipecah (dues_default per bulan).
+function splitDues(total: number, perMonth: number): {
+  full: number;
+  rem: number;
+} {
+  const full = Math.floor(total / perMonth);
+  return { full, rem: total % perMonth };
 }
 
 export function TransactionFormDialog({
@@ -76,6 +82,7 @@ export function TransactionFormDialog({
   entityLabel,
   duesHref,
   transaction,
+  paidPeriodsByPayer,
   onSaved,
 }: {
   open: boolean;
@@ -86,13 +93,11 @@ export function TransactionFormDialog({
   entityLabel: string;
   duesHref: string;
   transaction: TransactionRow | null;
+  paidPeriodsByPayer: Record<string, string[]>;
   onSaved: () => void;
 }) {
   const supabase = createClient();
   const [serverError, setServerError] = useState<string | null>(null);
-  const [monthsInput, setMonthsInput] = useState("1");
-  // Kosong dianggap 1; nilai tidak pernah di bawah 1 / di atas 12.
-  const months = clampInt(monthsInput, 1, 12);
 
   // State foto bukti.
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
@@ -147,7 +152,6 @@ export function TransactionFormDialog({
       setReceiptError(null);
       setReceiptFile(null);
       setRemoveReceipt(false);
-      setMonthsInput("1");
       setExistingPreview(null);
       setPreview(null);
       reset(
@@ -196,11 +200,43 @@ export function TransactionFormDialog({
   const transactionDate = watch("transaction_date");
   const duesPayerId = watch("dues_payer_id");
   const duesPeriod = watch("dues_period");
+  const amountWatched = watch("amount");
   const typeCategories = categories.filter((c) => c.type === type);
   const selectedCategory =
     categories.find((c) => c.id === categoryId && c.type === type) ?? null;
   const isDues = !!selectedCategory?.is_dues;
   const duesDefault = selectedCategory?.dues_default_amount ?? null;
+
+  // Kolom DB menyimpan dates_period sebagai date (ISO penuh); form memakai
+  // "YYYY-MM" (bulan boleh belum dipilih => "YYYY-" saja).
+  const periodValue = duesPeriod ?? "";
+  const periodYear =
+    periodValue.length >= 4 ? Number(periodValue.slice(0, 4)) : null;
+  const periodMonth = /^\d{4}-\d{2}/.test(periodValue)
+    ? Number(periodValue.slice(5, 7))
+    : null;
+
+  // Ada berapa bulan & sisa dari nominal yang diterima, kalau standar di-set.
+  const amountNum = Number(amountWatched || 0);
+  const plan =
+    isDues && duesDefault && amountNum > 0
+      ? splitDues(amountNum, duesDefault)
+      : null;
+  const planCount =
+    plan && plan.rem > 0 ? plan.full + 1 : plan?.full ?? (isDues ? 1 : 0);
+
+  // Festival bulan yang sudah lunas untuk payer terpilih (transaksi baru saja).
+  const paidThisPayer: string[] =
+    !transaction && duesPayerId
+      ? (paidPeriodsByPayer[duesPayerId] ?? [])
+      : [];
+  const paidKeys = new Set(paidThisPayer);
+  function isPaidMonth(month: number): boolean {
+    if (periodYear === null) return false;
+    return paidKeys.has(
+      `${periodYear}-${String(month).padStart(2, "0")}`,
+    );
+  }
 
   useEffect(() => {
     if (!categoryId) return;
@@ -221,19 +257,29 @@ export function TransactionFormDialog({
     }
   }, [isDues, transaction, duesDefault, getValues, setValue]);
 
-  // Saat pilih kategori iuran pada transaksi baru, prefill periode ke bulan
-  // berjalan — tahun otomatis = tahun ini, sehingga bulan bisa langsung dipilih.
+  // Tahun otomatis = tahun ini saat pilih kategori iuran (transaksi baru);
+  // bulan TIDAK di-autoselect, bendahara memilih sendiri.
   useEffect(() => {
     if (!isDues || transaction) return;
     if (!getValues("dues_period")) {
-      const now = new Date();
-      setValue(
-        "dues_period",
-        `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`,
-        { shouldValidate: true },
-      );
+      setValue("dues_period", `${new Date().getFullYear()}-`, {
+        shouldValidate: true,
+      });
     }
   }, [isDues, transaction, getValues, setValue]);
+
+  // Bulan yang sudah lunas untuk payer terpilih — kosongkan pilihan bulan agar
+  // tidak dobel catat (hanya transaksi baru).
+  useEffect(() => {
+    if (!isDues || transaction || !duesPayerId) return;
+    const current = getValues("dues_period") ?? "";
+    if (/^\d{4}-\d{2}$/.test(current) && paidKeys.has(current)) {
+      setValue("dues_period", `${current.slice(0, 4)}-`, {
+        shouldValidate: true,
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isDues, transaction, duesPayerId, duesPeriod, getValues, setValue]);
 
   async function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -260,18 +306,6 @@ export function TransactionFormDialog({
   const onSubmit = handleSubmit(async (values) => {
     setServerError(null);
 
-    if (isDues && months > 1 && !duesDefault) {
-      setError("amount", {
-        message:
-          "Atur nominal standar iuran di Kelola Kategori dulu untuk bayar beberapa bulan sekaligus, atau bayar per bulan satu-satu.",
-      });
-      return;
-    }
-    // Mode beberapa bulan dipatok nominal standar per bulan.
-    if (isDues && months > 1 && duesDefault) {
-      values.amount = String(duesDefault);
-    }
-
     const parsed = transactionSchema.safeParse(values);
     if (!parsed.success) {
       for (const issue of parsed.error.issues) {
@@ -293,7 +327,7 @@ export function TransactionFormDialog({
 
     let duesPayerIdValue: string | null = null;
     let period: string | null = null;
-    const perMonth = Number(data.amount);
+    const amount = Number(data.amount);
     if (isDues) {
       const duesCheck = duesFieldsSchema.safeParse({
         dues_payer_id: data.dues_payer_id ?? "",
@@ -312,8 +346,20 @@ export function TransactionFormDialog({
       }
     }
 
-    if (!(perMonth > 0)) {
+    if (!(amount > 0)) {
       setError("amount", { message: "Nominal harus lebih dari 0" });
+      return;
+    }
+
+    // Pecahan nominal total ke N bulan (satu bulan = dues_default_amount).
+    // Sisa (rem) menjadi cicil di bulan berikutnya.
+    const plan =
+      isDues && duesDefault ? splitDues(amount, duesDefault) : null;
+    const planCount = plan ? plan.full + (plan.rem > 0 ? 1 : 0) : 1;
+    if (plan && planCount > MAX_DUES_MONTHS) {
+      setServerError(
+        `Nominal ${amount.toLocaleString("id-ID")} setara lebih dari ${MAX_DUES_MONTHS} bulan iuran. Bayar per bagian supaya catatan tetap mudah dibaca.`,
+      );
       return;
     }
 
@@ -366,7 +412,7 @@ export function TransactionFormDialog({
         .from("transactions")
         .update({
           ...baseRecord(),
-          amount: perMonth,
+          amount,
         })
         .eq("id", transaction.id);
       if (error) {
@@ -374,25 +420,39 @@ export function TransactionFormDialog({
         setServerError(errorMessage(error));
         return;
       }
-    } else if (months > 1 && period && duesPayerIdValue) {
-      const records = Array.from({ length: months }, (_, i) => ({
-        organization_id: orgId,
-        ...baseRecord(),
-        dues_period: addMonths(period!, i),
-        amount: perMonth,
-        created_by: user.id,
-      }));
-      const { error } = await supabase.from("transactions").insert(records);
-      if (error) {
-        if (uploadedPath) void deleteReceipt(supabase, uploadedPath);
-        setServerError(errorMessage(error));
-        return;
+    } else if (plan && period && duesPayerIdValue) {
+      const records: Array<Record<string, unknown>> = [];
+      for (let i = 0; i < plan.full; i += 1) {
+        records.push({
+          organization_id: orgId,
+          ...baseRecord(),
+          dues_period: addMonths(period, i),
+          amount: duesDefault,
+          created_by: user.id,
+        });
+      }
+      if (plan.rem > 0) {
+        records.push({
+          organization_id: orgId,
+          ...baseRecord(),
+          dues_period: addMonths(period, plan.full),
+          amount: plan.rem,
+          created_by: user.id,
+        });
+      }
+      if (records.length > 0) {
+        const { error } = await supabase.from("transactions").insert(records);
+        if (error) {
+          if (uploadedPath) void deleteReceipt(supabase, uploadedPath);
+          setServerError(errorMessage(error));
+          return;
+        }
       }
     } else {
       const { error } = await supabase.from("transactions").insert({
         organization_id: orgId,
         ...baseRecord(),
-        amount: perMonth,
+        amount,
         created_by: user.id,
       });
       if (error) {
@@ -414,8 +474,6 @@ export function TransactionFormDialog({
     onSaved();
   });
 
-  const periodMonth = duesPeriod ? Number(duesPeriod.slice(5, 7)) : null;
-  const periodYear = duesPeriod ? Number(duesPeriod.slice(0, 4)) : null;
   const currentYear = new Date().getFullYear();
   const periodYears = Array.from(
     { length: PERIOD_YEAR_BACK + PERIOD_YEAR_FORWARD + 1 },
@@ -461,34 +519,39 @@ export function TransactionFormDialog({
             </div>
             <div className="space-y-2">
               <Label>Nominal (Rp)</Label>
-              {isDues && months > 1 ? (
-                <Input
-                  type="text"
-                  inputMode="numeric"
-                  value={String(duesDefault ?? "")}
-                  disabled
-                  className="h-11"
-                  readOnly
-                />
-              ) : (
-                <Input
-                  type="text"
-                  inputMode="numeric"
-                  placeholder="0"
-                  className="h-11"
-                  aria-invalid={!!errors.amount}
-                  {...register("amount")}
-                />
-              )}
+              <Input
+                type="text"
+                inputMode="numeric"
+                placeholder="0"
+                className="h-11"
+                aria-invalid={!!errors.amount}
+                {...register("amount")}
+              />
               {errors.amount && (
                 <p className="text-sm text-destructive">
                   {errors.amount.message}
                 </p>
               )}
-              {isDues && months > 1 && duesDefault && (
+              {isDues && duesDefault && plan && (
                 <p className="text-xs text-muted-foreground">
-                  {months} bulan × {formatNominal(duesDefault)} ={" "}
-                  {formatNominal(duesDefault * months)}
+                  {plan.full > 0 &&
+                    `${plan.full} × ${formatNominal(duesDefault)} `}
+                  {plan.rem > 0 &&
+                    `${plan.full > 0 ? "+ cicil " : "Cicil "}${formatNominal(plan.rem)}`}
+                  {plan.full > 0 || plan.rem > 0
+                    ? ` = ${formatNominal(amountNum)}`
+                    : ""}
+                  {plan.full === 0 && plan.rem > 0 && (
+                    <span className="block">
+                      (kurang dari {formatNominal(duesDefault)}, tercatat cicil)
+                    </span>
+                  )}
+                </p>
+              )}
+              {isDues && !duesDefault && (
+                <p className="text-xs text-muted-foreground">
+                  Atur nominal standar iuran di Kelola Kategori supaya nominal
+                  besar otomatis dipecah ke beberapa bulan.
                 </p>
               )}
             </div>
@@ -588,26 +651,35 @@ export function TransactionFormDialog({
                       <SelectItem value="__none__" disabled>
                         Bulan
                       </SelectItem>
-                      {MONTH_NAMES.map((name, index) => (
-                        <SelectItem
-                          key={name}
-                          value={String(index + 1)}
-                          disabled={periodYear === null}
-                        >
-                          {name}
-                        </SelectItem>
-                      ))}
+                      {MONTH_NAMES.map((name, index) => {
+                        const monthNum = index + 1;
+                        return (
+                          <SelectItem
+                            key={name}
+                            value={String(monthNum)}
+                            disabled={
+                              periodYear === null ||
+                              isPaidMonth(monthNum) ||
+                              (periodMonth === monthNum && isPaidMonth(monthNum))
+                            }
+                          >
+                            {name}
+                            {isPaidMonth(monthNum) && " (lunas)"}
+                          </SelectItem>
+                        );
+                      })}
                     </SelectContent>
                   </Select>
                   <Select
                     value={periodYear ? String(periodYear) : "__none__"}
                     onValueChange={(value: string | null) => {
                       if (!value || value === "__none__") return;
-                      setValue(
-                        "dues_period",
-                        `${value}-${String(periodMonth ?? 1).padStart(2, "0")}`,
-                        { shouldValidate: true },
-                      );
+                      const monthPart = periodMonth
+                        ? String(periodMonth).padStart(2, "0")
+                        : "";
+                      setValue("dues_period", `${value}-${monthPart}`, {
+                        shouldValidate: true,
+                      });
                     }}
                   >
                     <SelectTrigger className="h-11 w-full data-[size=default]:h-11">
@@ -630,30 +702,45 @@ export function TransactionFormDialog({
                     {errors.dues_period.message}
                   </p>
                 )}
+                {!transaction && periodYear !== null && (
+                  <p className="text-xs text-muted-foreground">
+                    Bulan yang sudah lunas untuk {entityLabel.toLowerCase()}{" "}
+                    terpilih tidak bisa dipilih lagi.
+                  </p>
+                )}
               </div>
               {!transaction && (
                 <div className="space-y-2">
                   <Label htmlFor="duesMonths">Bayar untuk berapa bulan</Label>
                   <Input
                     id="duesMonths"
-                    type="number"
-                    inputMode="numeric"
-                    min={1}
-                    max={12}
-                    value={monthsInput}
-                    onChange={(event) => setMonthsInput(event.target.value)}
+                    type="text"
+                    inputMode="none"
+                    readOnly
+                    value={
+                      isDues && duesDefault
+                        ? planCount > 0
+                          ? `${planCount} bulan`
+                          : "…"
+                        : "1 bulan"
+                    }
                     className="h-11"
                   />
-                  {months === 1 && (
+                  {isDues && duesDefault && plan && amountNum > 0 && (
                     <p className="text-xs text-muted-foreground">
-                      Bisa dikosongkan (dianggap 1). Isi 2–12 untuk bayar
-                      beberapa bulan sekaligus.
+                      {plan.full > 0
+                        ? `${plan.full} bulan penuh`
+                        : "Cicil bulan pertama"}
+                      {plan.rem > 0 &&
+                        ` + cicil ${formatNominal(plan.rem)}`}
+                      {plan.full > 0 &&
+                        ` (total ${formatNominal(amountNum)})`}
                     </p>
                   )}
-                  {months > 1 && !duesDefault && (
+                  {isDues && !duesDefault && (
                     <p className="text-xs text-muted-foreground">
-                      Isi nominal standar iuran di Kelola Kategori untuk
-                      membayar beberapa bulan sekaligus.
+                      Isi nominal standar iuran di Kelola Kategori supaya
+                      beberapa bulan sekaligus terhitung otomatis.
                     </p>
                   )}
                 </div>
@@ -789,8 +876,8 @@ export function TransactionFormDialog({
                 <Loader2 className="size-4 animate-spin" aria-hidden />
               )}
               {isSubmitting
-                ? months > 1
-                  ? `Menyimpan ${months} transaksi...`
+                ? planCount > 1
+                  ? `Menyimpan ${planCount} transaksi...`
                   : "Menyimpan..."
                 : "Simpan"}
             </Button>

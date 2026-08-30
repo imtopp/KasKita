@@ -67,6 +67,7 @@ export function TransactionsView({
   categories,
   payers,
   entityLabel,
+  paidPeriodsByPayer,
   canManage,
   page,
   totalPages,
@@ -77,6 +78,7 @@ export function TransactionsView({
   categories: CategoryOption[];
   payers: PayerRow[];
   entityLabel: string;
+  paidPeriodsByPayer: Record<string, string[]>;
   canManage: boolean;
   page: number;
   totalPages: number;
@@ -535,6 +537,7 @@ export function TransactionsView({
         categories={categories}
         payers={payers}
         entityLabel={entityLabel}
+        paidPeriodsByPayer={paidPeriodsByPayer}
         duesHref={duesHref}
         transaction={editing}
         onSaved={scheduleRefresh}

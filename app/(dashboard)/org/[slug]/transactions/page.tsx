@@ -102,6 +102,21 @@ export default async function TransactionsPage({
     .single();
   const entityLabel = orgDetails?.dues_entity_label ?? "Warga";
 
+  const { data: paidPeriods } = await supabase
+    .from("transactions")
+    .select("dues_payer_id, dues_period")
+    .eq("organization_id", org.id)
+    .not("dues_payer_id", "is", null)
+    .not("dues_period", "is", null);
+
+  const paidPeriodsByPayer: Record<string, string[]> = {};
+  for (const row of paidPeriods ?? []) {
+    if (!row.dues_payer_id || !row.dues_period) continue;
+    const key = row.dues_period.slice(0, 7);
+    const list = (paidPeriodsByPayer[row.dues_payer_id] ??= []);
+    if (!list.includes(key)) list.push(key);
+  }
+
   const totalPages = Math.max(1, Math.ceil((count ?? 0) / PAGE_SIZE));
 
   const normalized = (transactions ?? []).map(
@@ -133,6 +148,7 @@ export default async function TransactionsPage({
       categories={categories ?? []}
       payers={payers ?? []}
       entityLabel={entityLabel}
+      paidPeriodsByPayer={paidPeriodsByPayer}
       canManage={canManage}
       page={page}
       totalPages={totalPages}
