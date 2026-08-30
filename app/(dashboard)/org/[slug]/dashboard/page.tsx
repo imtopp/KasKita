@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ClipboardList } from "lucide-react";
+import { ClipboardList, ChevronRight } from "lucide-react";
 
 import { AnimatedNumber } from "@/components/animated-number";
 import {
@@ -201,17 +201,23 @@ export default async function OrgDashboardPage({
 
       {(activePayers ?? 0) > 0 && (
         <Link href={`/org/${slug}/dues`} className="block">
-          <Card className="transition-colors duration-200 hover:border-primary/40 active:bg-muted/40">
+          <Card className="group transition-colors duration-200 hover:border-primary/40 active:bg-muted/40">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base">
-                <ClipboardList className="size-4 text-primary" aria-hidden />
-                Iuran {entityLabel}
+              <CardTitle className="flex items-center justify-between gap-2 text-base">
+                <span className="flex items-center gap-2">
+                  <ClipboardList className="size-4 text-primary" aria-hidden />
+                  Iuran {entityLabel}
+                </span>
+                <ChevronRight
+                  className="size-4 text-muted-foreground transition-transform group-hover:translate-x-0.5"
+                  aria-hidden
+                />
               </CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground">
-                Cek status pembayaran {activePayers} {entityLabel.toLowerCase()}{" "}
-                aktif pada bulan ini.
+                Cek status pembayaran {activePayers}{" "}
+                {entityLabel.toLowerCase()} aktif pada bulan ini.
               </p>
             </CardContent>
           </Card>
