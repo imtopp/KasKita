@@ -113,8 +113,17 @@ export function DuesView({
     [duesCategories],
   );
 
-  const { paidMap, txByPayer } = useMemo(() => {
+  // Hanya kategori yang punya nominal standar yang dijadikan "target"; kategori
+  // iuran dengan nominal bebas (dues_default_amount null) tetap masuk hitungan
+  // total tapi tidak punya status Lunas/Cicil/Belum sendiri.
+  const payableCategories = useMemo(
+    () => duesCategories.filter((c) => (c.dues_default_amount ?? 0) > 0),
+    [duesCategories],
+  );
+
+  const { paidMap, paidByCategory, txByPayer } = useMemo(() => {
     const paidMap = new Map<string, number>();
+    const paidByCategory = new Map<string, Map<string, number>>();
     const txByPayer = new Map<string, DuesTx[]>();
     const prefix = `${periodYear}-${pad2(periodMonth)}`;
     for (const tx of duesTransactions) {
@@ -127,18 +136,46 @@ export function DuesView({
           tx.dues_payer_id,
           (paidMap.get(tx.dues_payer_id) ?? 0) + Number(tx.amount),
         );
+        if (tx.category_id) {
+          let catMap = paidByCategory.get(tx.dues_payer_id);
+          if (!catMap) {
+            catMap = new Map();
+            paidByCategory.set(tx.dues_payer_id, catMap);
+          }
+          catMap.set(
+            tx.category_id,
+            (catMap.get(tx.category_id) ?? 0) + Number(tx.amount),
+          );
+        }
       }
     }
-    return { paidMap, txByPayer };
+    return { paidMap, paidByCategory, txByPayer };
   }, [duesTransactions, periodMonth, periodYear]);
 
-  function statusOf(paid: number): Status {
-    if (target > 0) {
-      if (paid >= target) return "lunas";
+  function paidFor(payerId: string, categoryId: string): number {
+    return paidByCategory.get(payerId)?.get(categoryId) ?? 0;
+  }
+
+  function categoryStatus(paid: number, categoryTarget: number): Status {
+    if (categoryTarget > 0) {
+      if (paid >= categoryTarget) return "lunas";
       if (paid > 0) return "cicil";
       return "belum";
     }
     return paid > 0 ? "lunas" : "belum";
+  }
+
+  function statusOf(payerId: string): Status {
+    const paid = paidMap.get(payerId) ?? 0;
+    if (payableCategories.length === 0) {
+      return paid > 0 ? "lunas" : "belum";
+    }
+    const allLunas = payableCategories.every((category) => {
+      const categoryTarget = category.dues_default_amount ?? 0;
+      return paidFor(payerId, category.id) >= categoryTarget;
+    });
+    if (allLunas) return "lunas";
+    return paid > 0 ? "cicil" : "belum";
   }
 
   const visiblePayers = payersState.filter(
@@ -154,7 +191,7 @@ export function DuesView({
     for (const payer of activePayers) {
       const paid = paidMap.get(payer.id) ?? 0;
       collected += paid;
-      const status = statusOf(paid);
+      const status = statusOf(payer.id);
       if (status === "lunas") lunas += 1;
       else if (status === "cicil") cicil += 1;
       else belum += 1;
@@ -351,7 +388,7 @@ export function DuesView({
         <ul className="space-y-2">
           {visiblePayers.map((payer) => {
             const paid = paidMap.get(payer.id) ?? 0;
-            const status = statusOf(paid);
+            const status = statusOf(payer.id);
             const meta = STATUS_META[status];
             return (
               <li
@@ -408,6 +445,41 @@ export function DuesView({
                     </span>
                   </div>
                 </button>
+                {payableCategories.length > 0 && (
+                  <div className="mt-3 space-y-1.5 border-t pt-2.5">
+                    {payableCategories.map((category) => {
+                      const categoryTarget = category.dues_default_amount ?? 0;
+                      const catPaid = paidFor(payer.id, category.id);
+                      const catStatus = categoryStatus(catPaid, categoryTarget);
+                      const catMeta = STATUS_META[catStatus];
+                      return (
+                        <div
+                          key={category.id}
+                          className="flex items-center justify-between gap-2 text-xs"
+                        >
+                          <span className="min-w-0 truncate text-muted-foreground">
+                            {category.name}
+                          </span>
+                          <span className="shrink-0 tabular-nums text-muted-foreground">
+                            {formatRupiah(catPaid)} / {formatRupiah(categoryTarget)}
+                          </span>
+                          <span
+                            className={cn(
+                              "inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 font-semibold",
+                              catMeta.className,
+                            )}
+                          >
+                            <span
+                              className={cn("size-1 rounded-full", catMeta.dot)}
+                              aria-hidden
+                            />
+                            {catMeta.label}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </li>
             );
           })}
